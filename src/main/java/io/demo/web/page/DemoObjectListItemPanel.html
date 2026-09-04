@@ -1,0 +1,46 @@
+<wicket:panel>
+	<div class="row itemPanel">
+		<div wicket:id="imageContainer" class="bg-body-tertiary col-xxl-2 col-xl-2 col-lg-2 col-md-3 col-sm-12 col-xs-12">
+			<div class="imageContainer"
+				style="position: relative; float: left; width: 100%; background: #eeeeef; padding: 0.5em; min-height: 10em;"
+				wicket:id="noimage"></div>
+			<a class="mb-0 mb-lg-0" wicket:id="image-link" style="position: relative; float: left; width: 100%;" href="#"> <img
+				class="thumbnail" wicket:id="image" /> <i wicket:id="icon" class="fa-solid fa-headphones iconOver"
+				style="color: white; background: #222222; border-radius: 2px; padding: 0.5em; border: 1px solid #555555; position: absolute; right: 0.7em; bottom: 0.7em; font-size: 1em;"
+				aria-hidden="true"> </i>
+			</a>
+		</div>
+
+
+		<div wicket:id="titleTextContainer"
+			class="mt-2 mt-md-0 mt-xl-0 mt-lg-0 mt-xxl-0 col-xxl-10 col-xl-10 col-lg-10 col-md-9 col-sm-12 col-xs-12 text-lg-start text-md-start text-xs-center">
+			<div class="row">
+				<div class="col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+					<a wicket:id="title-link" class="title-link float-start" target="_blank"  href="#"> <span class="float-start; display:block;"
+						wicket:id="title"></span>
+					</a>
+
+					<div style="float: right; display: block;">
+						<i wicket:id="titleIcon"></i>
+						<div class="float-end itemMenu" wicket:id="menu" />
+					</div>
+				</div>
+			</div>
+
+			<div wicket:id="subtitle-container" class="row">
+				<div class="text-secondary col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+					<span class="subtitle" wicket:id="subtitle"></span>
+				</div>
+			</div>
+
+			<div wicket:id="textContainer" class="row">
+				<div class="col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12 mt-2">
+					<span wicket:id="text"></span>
+				</div>
+			</div>
+		</div>
+	</div>
+</wicket:panel>
+
+
+

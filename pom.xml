@@ -1,0 +1,542 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+
+<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>4.0.2</version>
+	</parent>
+	
+
+  <groupId>io</groupId>
+  <artifactId>demo</artifactId>
+  <version>main</version>
+  <packaging>jar</packaging>
+
+
+
+  <name>demo</name>
+  <url>http://maven.apache.org</url>
+
+   
+
+
+	<properties>
+	
+		<apache-freemaker-version>2.3.33</apache-freemaker-version>
+		<batik-version>1.19</batik-version>
+		<commons-io-version>2.22.0</commons-io-version>
+		<commons-logging-version>1.3.5</commons-logging-version>
+		<commons-validator.version>1.8.0</commons-validator.version>
+
+		<disruptor-version>3.4.4</disruptor-version> 
+		<!--  01 /2024 version 4.0.0 did not work with LogManager  -->
+		
+		<dropwizard-metrics-version>4.2.25</dropwizard-metrics-version>
+		<google-cloud-translate-version>2.77.0</google-cloud-translate-version>
+		<hibernate-core-version>6.4.4.Final</hibernate-core-version>
+		<hibernate-entitymanager-version>5.6.15.Final</hibernate-entitymanager-version>
+	
+		<jakarta.validation-api-version>3.1.1</jakarta.validation-api-version>
+
+		<java-version>17</java-version>
+
+		<jaudiotagger-version>3.0.1</jaudiotagger-version>
+		<jlayer-version>1.0.1.4</jlayer-version>
+		<junit-jupiter.version>5.3.2</junit-jupiter.version>
+		<junit-version>5.10.2</junit-version>
+		<log4j2-version>2.24.3</log4j2-version>
+		<maven.compiler.source>17</maven.compiler.source>
+		<maven.compiler.target>17</maven.compiler.target>
+		<maven.compiler.release>17</maven.compiler.release>
+		<maven-javadoc-plugin-version>3.6.3</maven-javadoc-plugin-version>
+		<maven-jar-plugin-version>3.3.0</maven-jar-plugin-version>
+		<maven.test.skip>true</maven.test.skip>
+		<mp3spi-version>1.9.5.4</mp3spi-version>
+		<pdfbox-version>3.0.7</pdfbox-version>
+ 
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<spring-ai.version>2.0.0-M6</spring-ai.version>
+		<spring-boot-starter-version>4.0.0</spring-boot-starter-version>
+		<odilon-client-version>1.15.2</odilon-client-version>
+		<oswego-version>1.3.4</oswego-version>
+		<google-libraries-bom-version>26.70.0</google-libraries-bom-version>
+
+		<spring-boot-starter-version>4.0.0</spring-boot-starter-version>
+
+		<tika-version>3.2.3</tika-version>
+
+		<tomcat-dbcp-version>11.0.6</tomcat-dbcp-version>  <!-- 4/2025 -->
+		<wicket-version>10.0.0</wicket-version>
+		<wktui-version>0.1-beta</wktui-version>
+		<zxing-version>3.3.0</zxing-version>
+	</properties>
+
+	<developers>
+		<developer>
+			<id>atolomei</id>
+			<name>Alejandro Tolomei</name>
+			<email>atolomei@novamens.com</email>
+		</developer>
+	</developers>
+
+	<repositories>
+		<repository>
+			<id>my-local-repo</id>
+			<!-- url>file://${basedir}/nonstandardlib/</ url -->
+			<url>~/.m2/repository</url>
+		</repository>
+		<repository>
+			<id>spring-milestones</id>
+			<name>Spring Milestones</name>
+			<url>https://repo.spring.io/milestone</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
+
+
+
+	<dependencies>
+
+		<!-- s. DB  ============================================================  -->
+		<!-- Source:
+		https://mvnrepository.com/artifact/io.sentry/sentry-spring-boot-starter -->
+		<!--dependency>
+    <groupId>io.sentry</groupId>
+    <artifactId>sentry-spring-boot-starter</artifactId>
+    <version>8.33.0</version>
+    <scope>compile</scope>
+<dependency -->
+
+
+		<!-- s. LOGGING ========================================================  -->
+
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-api</artifactId>
+		</dependency>
+
+
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-core</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-slf4j-impl</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>commons-logging</groupId>
+			<artifactId>commons-logging</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.lmax</groupId> <!-- used by Log4j2 Async  -->
+			<artifactId>disruptor</artifactId>
+			<version>${disruptor-version}</version>
+		</dependency>
+
+		<!-- log4j-spring-boot removed: incompatible with Spring Boot 4.x (constructor signature changed).
+		     spring-boot-starter-log4j2 handles the integration natively in Boot 4.x -->
+
+		<!-- =================================================================  -->
+
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>${commons-io-version}</version>
+		</dependency>
+
+		<!-- MONITOR ========================================================  -->
+
+		<dependency>
+			<groupId>io.dropwizard.metrics</groupId>
+			<artifactId>metrics-core</artifactId>
+			<version>${dropwizard-metrics-version}</version>
+		</dependency>
+
+		<!-- SPRING ========================================================  -->
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-starter-logging</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<!-- Add Log4j2 Dependency -->
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-log4j2</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+		</dependency>
+
+		<!-- ependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		< ependency -->
+
+		<!-- pendency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-orm</artifactId>
+		<dependency -->
+
+		<!-- dependency>
+			<groupId>org.hibernate.validator</groupId>
+			<artifactId>hibernate-validator</artifactId>
+		</ dependency -->
+
+ 
+ 		<!--  =========  JPA/Hibernate  =========================   -->
+ 
+ 		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-orm</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.hibernate.validator</groupId>
+			<artifactId>hibernate-validator</artifactId>
+		</dependency>
+		
+
+		<!--  =========  External  =========================   -->
+		
+		<dependency>
+			<groupId>oswego</groupId>
+			<artifactId>concurrent</artifactId>
+			<version>${oswego-version}</version>
+		</dependency>
+
+		<!-- TOMCAT  Database Connection Pooling
+		=================================================== -->
+
+		<dependency>
+			<groupId>org.apache.tomcat</groupId>
+			<artifactId>tomcat-dbcp</artifactId>
+			<version>${tomcat-dbcp-version}</version>
+		</dependency>
+
+		<!-- POSTGRESQL HIBERNATE
+		====================================================  -->
+
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- hibernate-core: version managed by Spring Boot 4.x (org.hibernate.orm groupId since Hibernate 6+) -->
+		<!-- dependency>
+			<groupId>org.hibernate.orm</groupId>
+			<artifactId>hibernate-core</artifactId>
+		</ dependency -->
+
+		<!-- hibernate-entitymanager was merged into hibernate-core in Hibernate 6.x, removed -->
+
+		<!-- ODILON
+		======================================================  -->
+
+		<!-- dependency>
+			<groupId>io.odilon</groupId>
+			<artifactId>odilon-client</artifactId>
+			<version>${odilon-client-version}</version>
+		</ dependency -->
+
+
+		<!-- pdfbox
+		======================================================  -->
+
+
+		<dependency>
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>pdfbox</artifactId>
+			<version>${pdfbox-version}</version>
+		</dependency>
+
+		<!-- batik (SVG rasterization)
+		======================================================  -->
+
+		<dependency>
+			<groupId>org.apache.xmlgraphics</groupId>
+			<artifactId>batik-transcoder</artifactId>
+			<version>${batik-version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>xml-apis</groupId>
+					<artifactId>xml-apis</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.xmlgraphics</groupId>
+			<artifactId>batik-codec</artifactId>
+			<version>${batik-version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>xml-apis</groupId>
+					<artifactId>xml-apis</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+
+		<!-- oauth
+		======================================================  -->
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-client</artifactId>
+		</dependency>
+
+
+		<!-- CAFFEINE
+		======================================================  -->
+
+		<dependency>
+			<groupId>com.github.ben-manes.caffeine</groupId>
+			<artifactId>caffeine</artifactId>
+			<!-- version -> we use the one provided by Spring -->
+		</dependency>
+
+
+		<!-- LOMBOK
+		======================================================  -->
+
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+		</dependency>
+
+
+
+		<!-- jackson Hibernate
+	    =======================================================  -->
+
+		<!-- Java 8 date/time support (OffsetDateTime etc.) for Jackson -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-jsr310</artifactId>
+			<!-- version -> managed by Spring Boot -->
+		</dependency>
+
+		<!-- jackson-datatype-hibernate6 removed: incompatible with Hibernate 7 (org.hibernate.engine.spi.Mapping removed).
+		     tools.jackson version registers via ServiceLoader and crashes on startup.
+		     Hibernate6Module is unused in code (commented out in DellemuseObjectMapper).
+		     Re-add jackson-datatype-hibernate7 when available for tools.jackson 3.x. -->
+
+
+
+
+
+
+		<!-- Freemaker
+	    =======================================================  -->
+
+		<dependency>
+			<groupId>org.freemarker</groupId>
+			<artifactId>freemarker</artifactId>
+
+		</dependency>
+
+
+		<!-- DELLEMUSE MODEL
+		===========================================================  -->
+
+		 
+
+
+		<!-- Thumbnail ================================================  -->
+
+		<dependency>
+			<groupId>net.coobird</groupId>
+			<artifactId>thumbnailator</artifactId>
+			<version>[0.4, 0.5)</version>
+		</dependency>
+
+
+		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-core</artifactId>
+			<version>${tika-version}</version>
+		</dependency>
+
+
+		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-parsers-standard-package</artifactId>
+			<version>${tika-version}</version>
+		</dependency>
+
+		<!-- s. WICKET  SPRING
+		====================================================  -->
+		<!--  
+			Enables and configures Apache Wicket from within a Spring Boot Application.
+		https://mvnrepository.com/artifact/com.giffing.wicket.spring.boot.starter/wicket-spring-boot-starter 
+		-->
+
+		<dependency>
+			<groupId>com.giffing.wicket.spring.boot.starter</groupId>
+			<artifactId>wicket-spring-boot-starter</artifactId>
+			<version>${spring-boot-starter-version}</version>
+
+			<exclusions>
+				<exclusion>
+					<groupId>org.apache.wicket</groupId>
+					<artifactId>wicket-core</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+
+		<dependency>
+			<groupId>org.apache.wicket</groupId>
+			<artifactId>wicket-auth-roles</artifactId>
+			<version>${wicket-version}</version> <!-- Use the appropriate version -->
+		</dependency>
+
+		<dependency>
+			<groupId>org.wicketstuff</groupId>
+			<artifactId>wicketstuff-annotation</artifactId>
+			<version>${wicket-version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>io</groupId>
+			<artifactId>wktui</artifactId>
+			<version>${wktui-version}</version>
+		</dependency>
+
+		 
+
+
+		<!-- s. TEST ====================================================  -->
+
+		<!-- exclude junit 4 -->
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<!--scope>test</scope -->
+			<exclusions>
+				<exclusion>
+					<groupId>junit</groupId>
+					<artifactId>junit</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<!-- e. TEST ====================================================  -->
+
+		<!-- junit 5 -->
+
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-api</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.novamens</groupId>
+			<artifactId>kbee-wfc-wicket</artifactId>
+			<version>8.5-SNAPSHOT</version>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+			</resource>
+			<resource>
+				<directory>src/main/java</directory>
+				<includes>
+					<include>**</include>
+				</includes>
+				<excludes>
+					<exclude>**/*.java</exclude>
+				</excludes>
+			</resource>
+		</resources>
+
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<release>17</release>
+					<!-- JDK 23+ disables implicit annotation processing: enable it for Lombok -->
+					<proc>full</proc>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+							<version>${lombok.version}</version>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<mainClass>dellemuse.serverapp.DellemuseServerApp</mainClass>
+					<layout>JAR</layout>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<excludes>
+						<exclude>./src/test/*</exclude>
+						<exclude>./src/main/resources/*</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>

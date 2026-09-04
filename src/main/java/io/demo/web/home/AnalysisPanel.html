@@ -1,0 +1,83 @@
+
+<wicket:panel>
+
+
+	<div class="row">
+		<div
+			class="text-md-start text-lg-start text-xl-start text-xxl-start text-sm-center col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+
+
+
+			<div class="bg-light border rounded col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+			
+			
+				<div class="w-100 ps-3 pe-3 mt-2" wicket:id="analysisContainer">
+					<div class="row">
+						<div class="mt-2 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+							<h4>Por qué es relevante</h4>
+						</div>
+					</div>
+
+					<div class="row">
+						<div class="mb-2 mt-0 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+							<span wicket:id="analysis"></span> <span wicket:id="noInfoAnalysis"></span>
+						</div>
+					</div>
+				</div>
+
+
+				<div class="w-100 ps-3 pe-3 mt-2" wicket:id="fallosContainer">
+
+					<div class="row">
+						<div class="mt-2 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+							<h4>Citas jurisprudenciales</h4>
+						</div>
+					</div>
+
+					<div class="row">
+						<div class="mb-2 mt-0 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+							<ul wicket:id="fallos" class="list-group mt-0">
+								<li class="ps-0 list-group-item border-0 bg-light" wicket:id="quote"><span wicket:id="fallo-text"></span></li>
+							</ul>
+							<span wicket:id="noFallosQuotes"></span>
+
+
+						</div>
+					</div>
+				</div>
+
+
+
+				<div class="w-100 ps-3 pe-3 mt-2" wicket:id="normasContainer">
+
+					<div class="row">
+						<div class="mt-2 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+							<h4>Citas normativas</h4>
+						</div>
+					</div>
+
+					<div class="row">
+						<div class="mb-2 mt-0 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+							<ul wicket:id="normas" class="list-group mt-0">
+								<li class="ps-0 list-group-item border-0 bg-light" wicket:id="quote"><span wicket:id="norma-text"></span></li>
+							</ul>
+							<span wicket:id="noNormasQuotes"></span>
+
+
+						</div>
+					</div>
+				</div>
+
+
+
+
+				<div class="w-100 ps-4" wicket:id="error" />
+
+			</div>
+		</div>
+	</div>
+
+
+
+
+</wicket:panel>

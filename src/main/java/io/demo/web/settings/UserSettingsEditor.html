@@ -1,0 +1,38 @@
+<wicket:panel>
+
+	<div class="row">
+		<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12 ps-4 pe-4 pt-4 pb-4">
+			<div class="row">
+				<div class="border rounded col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12 ps-4 pe-4 pt-2 pb-2">
+
+					<form wicket:id="settingsForm" class="mb-4">
+						<fieldset>
+
+							<div class="mb-4" wicket:id="useQueryCache"></div>
+							<div class="mb-4" wicket:id="maxSearchResults"></div>
+
+							<div class="mb-4" wicket:id="recentFirst"></div>
+							<div class="mb-4" wicket:id="maxHistory"></div>
+
+							<div class="mb-4" wicket:id="showAnalysis"></div>
+							<div class="mb-4" wicket:id="showQuotes"></div>
+							<div class="mb-4" wicket:id="maxQuotes"></div>
+
+							<div style="float: left; width: 100%;" class="mb-4 mt-3 mr-0" wicket:id="save"></div>
+
+						</fieldset>
+					</form>
+
+					<div class="mb-4">
+						<a wicket:id="cleanCaches" class="btn btn-outline-danger btn-md"><span wicket:id="cleanCachesLabel"></span></a>
+					</div>
+
+					<div class="mt-2 mb-2" wicket:id="success"></div>
+					<div class="mt-2 mb-2" wicket:id="error"></div>
+
+				</div>
+			</div>
+		</div>
+	</div>
+
+</wicket:panel>

@@ -1,0 +1,83 @@
+<wicket:panel>
+
+
+
+	<div class="row">
+		<div class= " col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12 ps-4 pe-4 pt-4 pb-4">
+
+
+
+			<div class="row">
+				<div
+					class="border rounded bg-light col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12 ps-4 pe-4 pt-2 pb-2">
+
+
+					<div class="row">
+						<div class="mt-2 col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12 mb-2">
+
+
+
+							<form wicket:id="searchForm">
+								<fieldset>
+									<!-- div class="row">
+				<div class="mt-2 col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12 mb-2">
+					<h3>
+						<wicket:message key="search" />
+					</h3>
+				</div>
+			</div -->
+									<div class="mb-4" wicket:id="text"></div>
+
+									<div class="row">
+										<div class="mt-0 col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12 mb-2">
+											<a href="#" style="float: left;" class="mb-0 mt-2 d-inline-block" wicket:id="toggleHistory"><span
+												wicket:id="toggleHistoryLabel">ver consultas recientes</span></a>
+											<div style="float: right;" class="mb-0 mt-0 mr-0 f-e" wicket:id="send"></div>
+										</div>
+									</div>
+
+								</fieldset>
+							</form>
+							<div class="mt-2 mb-2" wicket:id="success"></div>
+							<div class="mt-2 mb-2" wicket:id="error"></div>
+						</div>
+					</div>
+
+
+					<div wicket:id="historyContainer" class="row">
+						<div class="mt-2 col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12 mb-2">
+
+							<div class="row">
+								<div class="mt-2 col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12 mb-2">
+									<h3 style="font-size: 1em; font-weight: bold; text-transform: uppercase;">Recientes</h3>
+								</div>
+							</div>
+
+							<div wicket:id="history"></div>
+
+
+
+						</div>
+					</div>
+
+
+
+
+
+
+				</div>
+			</div>
+
+
+
+
+
+
+
+
+
+		</div>
+	</div>
+
+
+</wicket:panel>
