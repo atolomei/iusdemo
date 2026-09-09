@@ -1,4 +1,4 @@
-package io.demo.web.page;
+package io.demo.web.panel;
 
 import java.io.Serializable;
 

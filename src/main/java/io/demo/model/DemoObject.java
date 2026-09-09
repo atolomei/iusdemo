@@ -2,8 +2,9 @@ package io.demo.model;
 
 import java.time.OffsetDateTime;
 
-public class DemoObject extends JsonObject {
+public abstract class DemoObject extends JsonObject {
 
+	public abstract String getTitle();
 	
 
 }

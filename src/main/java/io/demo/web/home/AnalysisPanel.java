@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.wicket.Component;
+import org.apache.wicket.ajax.AjaxRequestTarget;
+import org.apache.wicket.ajax.markup.html.AjaxLink;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.list.ListItem;
@@ -34,13 +36,24 @@ public class AnalysisPanel<T extends Documento> extends ModelPanel<T> {
 
 	static private Logger logger = Logger.getLogger(AnalysisPanel.class.getName());
 	
-
+	private State state=State.ANALYSIS_NOT_SHOWN;
+	
+	private enum State {
+		ANALYSIS_NOT_SHOWN, ANALYSIS_SHOWN;
+	}
+	
+	
 	
 	private static final String NO_INFO = "sin información";
 
 	private WebMarkupContainer analysisContainer;
 	private WebMarkupContainer fallosContainer;
 	private WebMarkupContainer normasContainer;
+	private WebMarkupContainer sumariosContainer;
+	
+	private WebMarkupContainer analysisLookupContainer;
+	
+	
 
 	/** the query used to analyze the document (RAG document analysis) */
 	private String query;
@@ -60,18 +73,84 @@ public class AnalysisPanel<T extends Documento> extends ModelPanel<T> {
 
 		// --- Analysis ---------------------------------------------------
 
+		
+		// visible only if the user enabled "show analysis"
+		analysisLookupContainer = new WebMarkupContainer("analysisLookupContainer") {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			protected void onConfigure() {
+				super.onConfigure();
+				setVisible(getUserSettingsService().isShowAnalysis() && getState() == State.ANALYSIS_NOT_SHOWN);
+			}
+		};
+		analysisLookupContainer.setOutputMarkupPlaceholderTag(true);
+		
+		
+		AjaxLink<Void> showAnalysis = new AjaxLink<Void>("show") {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void onClick(AjaxRequestTarget target) {
+				generateAnalysis();
+				state = State.ANALYSIS_SHOWN;
+				target.add(analysisLookupContainer);
+				target.add(analysisContainer);
+			}
+		}; 
+		analysisLookupContainer.add(showAnalysis);
+		add(analysisLookupContainer);
+		
+		
+		
 		// visible only if the user enabled "show analysis"
 		analysisContainer = new WebMarkupContainer("analysisContainer") {
 			private static final long serialVersionUID = 1L;
 
 			@Override
-			public boolean isVisible() {
-				return getUserSettingsService().isShowAnalysis();
+			protected void onConfigure() {
+				super.onConfigure();
+				setVisible(getUserSettingsService().isShowAnalysis() && getState() == State.ANALYSIS_SHOWN);
 			}
 		};
 		analysisContainer.setOutputMarkupPlaceholderTag(true);
 		add(analysisContainer);
 
+		analysisContainer.add( new InvisiblePanel("analysis"));
+		analysisContainer.add( new InvisiblePanel("noInfoAnalysis"));
+		
+		
+		
+		
+	
+		
+
+
+		// --- Sumarios jurisprudenciales (fallos) ----------------------------
+		
+		sumariosContainer = addQuoteSection("sumariosContainer", "sumarios", "sumario-text", "noSumariosQuotes", getFallosModel());
+		
+
+		// --- Citas jurisprudenciales (fallos) ----------------------------
+
+		fallosContainer = addQuoteSection("fallosContainer", "fallos", "fallo-text", "noFallosQuotes", getFallosModel());
+
+		// --- Citas normativas (normas) ------------------------------------
+
+		normasContainer = addQuoteSection("normasContainer", "normas", "norma-text", "noNormasQuotes", getNormasModel());
+
+		add(new InvisiblePanel("error"));
+		
+		
+		
+		
+	}
+	
+	
+	
+	
+	
+	protected void generateAnalysis() {
 		
 		try {
 			Label analysis = new Label("analysis", getAnalysisModel()) {
@@ -83,12 +162,12 @@ public class AnalysisPanel<T extends Documento> extends ModelPanel<T> {
 				}
 			};
 			analysis.setEscapeModelStrings(false);
-			analysisContainer.add(analysis);
+			analysisContainer.addOrReplace(analysis);
 		} catch (Exception e) {
 			logger.error(e);
 			Label error = new Label("analysis", "Error al obtener el análisis del documento: " + e.getMessage());
 			error.setEscapeModelStrings(false);
-			analysisContainer.add(error);
+			analysisContainer.addOrReplace(error);
 		}
 		
 		
@@ -101,17 +180,36 @@ public class AnalysisPanel<T extends Documento> extends ModelPanel<T> {
 				return !hasAnalysis();
 			}
 		};
-		analysisContainer.add(noInfoAnalysis);
+		analysisContainer.addOrReplace(noInfoAnalysis);	
+		
+		
+		
+		AjaxLink<Void> close = new AjaxLink<Void>("close") {
+			private static final long serialVersionUID = 1L;
 
-		// --- Citas jurisprudenciales (fallos) ----------------------------
+			@Override
+			public void onClick(AjaxRequestTarget target) {
+			 
+				state = State.ANALYSIS_NOT_SHOWN;
+				target.add(analysisLookupContainer);
+				target.add(analysisContainer);
+			}
+		}; 
+		
+		analysisContainer.addOrReplace(close);
+		
+		
+	
+	}
 
-		fallosContainer = addQuoteSection("fallosContainer", "fallos", "fallo-text", "noFallosQuotes", getFallosModel());
+	
+	
 
-		// --- Citas normativas (normas) ------------------------------------
+	
 
-		normasContainer = addQuoteSection("normasContainer", "normas", "norma-text", "noNormasQuotes", getNormasModel());
-
-		add(new InvisiblePanel("error"));
+	protected State getState() {
+		return state;
+	
 	}
 
 	/**

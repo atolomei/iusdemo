@@ -49,8 +49,9 @@ public class SecurityConfig {
 
 	/**
 	 * Required by SecureWebSession (wicket-spring-boot starter), which injects a
-	 * bean named "authenticationManager". The demo does not require login, so a
-	 * simple in-memory user is enough.
+	 * bean named "authenticationManager". Users are authenticated against the
+	 * database and can sign in with username / email / phone
+	 * (see {@link io.demo.security.authentication.DatabaseUserDetailsService}).
 	 */
 	@Bean
 	public AuthenticationManager authenticationManager(UserDetailsService userDetailsService,
@@ -58,16 +59,6 @@ public class SecurityConfig {
 		DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
 		provider.setPasswordEncoder(passwordEncoder);
 		return new ProviderManager(provider);
-	}
-
-	@Bean
-	public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {
-		UserDetails user = User.builder()
-				.username("demo")
-				.password(passwordEncoder.encode("demo"))
-				.roles("USER")
-				.build();
-		return new InMemoryUserDetailsManager(user);
 	}
 
 	@Bean
@@ -84,6 +75,8 @@ public class SecurityConfig {
 	            .requestMatchers(
 	                "/signin",
 	                "/signin/**",
+	                "/forgot",
+	                "/forgot/**",
 	                "/oauth2/**",
 	                "/wicket/**",
 	                "/wicket/resource/**",

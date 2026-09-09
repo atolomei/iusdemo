@@ -28,4 +28,12 @@ h4 {font-size: 0.95em; font-weight: bold; text-transform: uppercase;}
 
 
 
+.navbar-brand,
+.global-toolbar {font-size: 1em;}
+
+ 
+
+.mainMenu {padding: 1em 0.45em !important;}
+.mainMenu i {font-size: 1.6em;}
+
 

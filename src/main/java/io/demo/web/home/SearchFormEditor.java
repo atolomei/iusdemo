@@ -15,6 +15,7 @@ import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.model.PropertyModel;
 import org.apache.wicket.model.util.ListModel;
+import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.apache.wicket.util.visit.IVisit;
 import org.apache.wicket.util.visit.IVisitor;
 
@@ -284,6 +285,7 @@ public class SearchFormEditor extends ObjectEditor<String>   {
 			refreshHistoryPanel();
 
 		} catch (Exception e) {
+			logger.error(e);
 			addOrReplace(new SimpleAlertRow<Void>("error", e));
 		}
 		target.add(this);
@@ -295,6 +297,12 @@ public class SearchFormEditor extends ObjectEditor<String>   {
 		ListPanel<String> panel = new ListPanel<String>("history", getHistoryModel()) {
 
 			@Override
+			public void onClick( IModel<String> model ) {
+				SearchFormEditor.this.onSearchHistory(model);
+			}
+
+			
+			@Override
 			protected String getListGroupItemCss() {
 				return "list-group-item  border-0";
 			}
@@ -305,6 +313,17 @@ public class SearchFormEditor extends ObjectEditor<String>   {
 		panel.setToolbarVisible(false);
 		historyPanel = panel;
 		this.historyContainer.addOrReplace(historyPanel);
+	}
+
+	protected void onSearchHistory(IModel<String> model) {
+		 
+		
+		PageParameters params = new PageParameters();
+		params.add("query", model.getObject());
+		setResponsePage( new DemoHomePage(params  ));
+		
+				
+		
 	}
 
 	protected void onCancel(AjaxRequestTarget target) {

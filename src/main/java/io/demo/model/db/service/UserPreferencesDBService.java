@@ -27,10 +27,7 @@ public class UserPreferencesDBService extends DBService<UserPreferences, Long> {
 		super(repository, settings);
 	}
 
-	@PostConstruct
-	protected void onInitialize() {
-		DBService.register(UserPreferences.class, this);
-	}
+	 
 
 	@Transactional
 	public Optional<UserPreferences> getByUser(User user) {
@@ -52,4 +49,13 @@ public class UserPreferencesDBService extends DBService<UserPreferences, Long> {
 	protected Class<UserPreferences> getEntityClass() {
 		return UserPreferences.class;
 	}
+
+
+
+	@PostConstruct
+	protected void onInitialize() {
+		super.register(getEntityClass(), this);
+	}
+	
+
 }

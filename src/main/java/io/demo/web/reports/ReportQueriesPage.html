@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:wicket="http://wicket.apache.org">
+<body>
+	<wicket:extend>
+
+		<wicket:container wicket:id="top-panel" />
+
+
+			<div wicket:id="page-header"></div>
+
+
+		<main class="container-xxl main">
+
+
+
+			<div class="mt-4 mb-4" style="float: left; width: 100%; padding: 0;">
+				<div class="row">
+					<div class="col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12">
+						<h4>Recent queries</h4>
+					</div>
+				</div>
+
+				<!-- Date Range Selector -->
+				<div class="row">
+					<div class="mt-1 mb-2 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12">
+						<select wicket:id="queriesRangeSelector" class="form-select" style="font-size: 0.95em;"></select>
+					</div>
+				</div>
+
+				<!-- Sign-in list (refreshed via AJAX) -->
+				<div wicket:id="queriesContainer">
+					<div class="row">
+						<div class="col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12">
+							<div style="float: left; width: 100%;" wicket:id="queryList"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			</main>
+	</wicket:extend>
+</body>
+</html>
+
+

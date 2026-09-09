@@ -1,4 +1,6 @@
-package io.demo.web.page;
+package io.demo.web.panel;
+
+import java.util.Optional;
 
 import org.apache.wicket.markup.html.panel.Panel;
 import org.apache.wicket.model.IModel;
@@ -6,25 +8,21 @@ import org.apache.wicket.model.IModel;
 import io.demo.model.User;
 import io.wktui.nav.breadcrumb.BreadCrumb;
 import wktui.base.ModelPanel;
+import wktui.base.OptionalModelPanel;
 
-public class SimpleHeaderPanel extends ModelPanel<User> {
+public class SimpleHeaderPanel extends OptionalModelPanel<User> {
 
-	public SimpleHeaderPanel(String id, IModel<User> model) {
-		super(id, model);
-		// TODO Auto-generated constructor stub
+	public SimpleHeaderPanel(String id, Optional<IModel<User>> omodel) {
+		super(id, omodel);
+		
 	}
 
 	private static final long serialVersionUID = 1L;
 
 	
-	public void onInitialze() {
+	@Override
+	public void onInitialize() {
 		super.onInitialize();
-
-		
-		
-		
-		
-		
 	}
 
 

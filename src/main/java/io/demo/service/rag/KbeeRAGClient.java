@@ -8,15 +8,15 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Duration;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import io.demo.Logger;
+import io.demo.model.DemoObjectMapper;
 import io.demo.service.Settings;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * <p>
@@ -55,10 +55,10 @@ public class KbeeRAGClient {
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
-        this.mapper = new ObjectMapper();
-        this.mapper.registerModule(new JavaTimeModule());
-        this.mapper.findAndRegisterModules();
-        this.mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        this.mapper = new DemoObjectMapper();
+        //this.mapper.registerModule(new JavaTimeModule());
+        //this.mapper.findAndRegisterModules();
+        //this.mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 
     /**
@@ -184,6 +184,36 @@ long startTime = System.currentTimeMillis();
         return settings.getRagServerUrl() + ":" + settings.getRagServerPort() + DOCUMENT_ANALYSIS_ENDPOINT;
     }
 
+    
+    public List<RagResponse> getResponseHistory() {
+
+    
+    	try {
+			File workDir = new File( settings.getWorkDir() );
+			File[] files = workDir.listFiles((dir, name) -> name.endsWith(".json"));
+			if (files == null) {
+				logger.warn("No response history found in work directory: " + workDir.getAbsolutePath());
+				return List.of();
+			}
+			return List.of(files).stream()
+					.map(file -> {
+						try {
+							return mapper.readValue(file, RagResponse.class);
+						} catch (Exception e) {
+							logger.error(e, "could not read RagResponse from file -> " + file.getAbsolutePath());
+							return null;
+						}
+					})
+					.filter(ragResponse -> ragResponse != null)
+					.toList();
+		} catch (Exception e) {
+			throw new RuntimeException("could not get response history", e);
+		}
+    	
+    	    	
+    	
+    
+    }
     /**
      * Saves the {@link RagResponse} as pretty-printed JSON into the work
      * directory, with the file name being the SHA-256 hash of the question.

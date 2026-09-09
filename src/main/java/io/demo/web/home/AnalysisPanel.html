@@ -9,21 +9,40 @@
 
 
 			<div class="bg-light border rounded col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
-			
-			
-				<div class="w-100 ps-3 pe-3 mt-2" wicket:id="analysisContainer">
+
+
+
+
+
+				<!--  START - SUMARIOS  ------------------------------- -->
+
+
+
+				<div class="w-100 ps-3 pe-3 mt-2" wicket:id="sumariosContainer">
+
 					<div class="row">
 						<div class="mt-2 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
-							<h4>Por qué es relevante</h4>
+							<h4>Sumarios</h4>
 						</div>
 					</div>
 
 					<div class="row">
 						<div class="mb-2 mt-0 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
-							<span wicket:id="analysis"></span> <span wicket:id="noInfoAnalysis"></span>
+							<ul wicket:id="sumarios" class="list-group mt-0">
+								<li class="ps-0 list-group-item border-0 bg-light" wicket:id="quote"><span wicket:id="sumario-text"></span></li>
+							</ul>
+							<span wicket:id="noSumariosQuotes"></span>
 						</div>
 					</div>
 				</div>
+
+
+				<!--  END - SUMARIOS  ------------------------------- -->
+
+
+
+
+				<!--  START - CITAS  FALLOS   ------------------------------- -->
 
 
 				<div class="w-100 ps-3 pe-3 mt-2" wicket:id="fallosContainer">
@@ -47,6 +66,12 @@
 				</div>
 
 
+				<!--  END - CITAS  FALLOS   ------------------------------- -->
+
+
+
+				<!--  START - CITAS  NORMAS   ------------------------------- -->
+
 
 				<div class="w-100 ps-3 pe-3 mt-2" wicket:id="normasContainer">
 
@@ -67,6 +92,56 @@
 						</div>
 					</div>
 				</div>
+
+				<!--  END - CITAS  NORMAS   ------------------------------- -->
+
+
+
+
+
+
+				<!--  START - WHY THIS DOC IS RELEVANT FOR THE QUERY ------------------------------- -->
+
+
+				<div class="w-100 ps-3 pe-3 mt-2" wicket:id="analysisLookupContainer">
+					<div class="row">
+						<div class="mt-2 mb-4 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+							<a wicket:id="show"> Por qué es relevante ?</a>
+						</div>
+					</div>
+
+
+				</div>
+
+				<!--  this panel to be displayed only after the user clicks on "lookup  -->
+
+				<div class="w-100 ps-3 pe-3 mt-2" wicket:id="analysisContainer">
+					<div class="row">
+						<div class="mt-4 mb-0 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+							<h4>Por qué es relevante</h4>
+						</div>
+					</div>
+
+					<div class="row">
+						<div class="mb-2 mt-0 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+							<span wicket:id="analysis"></span> 
+							<span wicket:id="noInfoAnalysis"></span>
+						</div>
+					
+						<div class="row">
+						<div class="mb-4 mt-0 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+							<a wicket:id="close"> cerrar</a>
+						
+						</div>
+					</div>
+					
+					
+					
+					</div>
+				</div>
+
+				<!-- END - WHY THIS DOC IS RELEVANT FOR THE QUERY ------------------------------- -->
+
 
 
 

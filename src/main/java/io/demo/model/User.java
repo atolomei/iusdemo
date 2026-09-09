@@ -9,6 +9,8 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -55,8 +57,6 @@ public class User extends DemoDBObject {
 	@Column(name = "zoneId")
 	private String zoneId;
 
-	
-
 	@JsonProperty("locale")
 	@Column(name = "locale")
 	private String locale;
@@ -77,12 +77,83 @@ public class User extends DemoDBObject {
 	@Column(name = "welcomeEmailSent")
 	private OffsetDateTime welcomeEmailSent;
 
+	
+	@JsonProperty("role")
+	@Column(name = "role")
+	@Enumerated(EnumType.ORDINAL)
+	private Role role;
 
+	
 
 	public Locale getLocale() {
 		if (this.locale==null)
 			return null;
 		return Locale.forLanguageTag(this.locale);
 	}
-	
+
+	public String getFirstName() {
+		return firstName;
+	}
+
+	public String getLastName() {
+		return lasttName;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	/** Username is stored in the base {@code name} field. */
+	public String getUsername() {
+		return getName();
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
+	public String getPhone() {
+		return phone;
+	}
+
+	public void setPhone(String phone) {
+		this.phone = phone;
+	}
+
+	public Role getRole() {
+		return role;
+	}
+
+	public void setRole(Role role) {
+		this.role = role;
+	}
+
+	/** Spring Security authority for this user (single role model). */
+	public java.util.List<String> getRolesAsString() {
+		if (role == null)
+			return java.util.List.of("ROLE_USER");
+		return java.util.List.of("ROLE_" + role.name());
+	}
+
+	/**
+	 * Display name: "first last", falling back to the email if no name is set.
+	 */
+	public String getDisplayname() {
+		StringBuilder sb = new StringBuilder();
+		if (firstName != null)
+			sb.append(firstName);
+		if (lasttName != null) {
+			if (sb.length() > 0)
+				sb.append(" ");
+			sb.append(lasttName);
+		}
+		if (sb.length() == 0 && email != null)
+			sb.append(email);
+		return sb.toString();
+	}
+
 }

@@ -11,7 +11,9 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import io.demo.model.DemoObjectMapper;
 import io.demo.model.Sentencia;
+import io.demo.model.User;
 import io.demo.service.rag.DocumentAnalysisResponse;
 import io.demo.service.rag.KbeeRAGClient;
 import io.demo.service.rag.RAGConverter;
@@ -19,10 +21,19 @@ import io.demo.service.rag.RagResponse;
 import jakarta.annotation.PostConstruct;
 
 
+import tools.jackson.databind.ObjectMapper;
+
+
 
 @Service
 public class LegalSearchService extends BaseService {
 
+	static private io.demo.Logger logger = io.demo.Logger.getLogger(LegalSearchService.class.getName());
+
+	
+	/* Jackson 3 ObjectMapper */
+	static final private  ObjectMapper jsonMapper = new DemoObjectMapper();
+	
 	
 	private List<Sentencia> list;
 
@@ -42,20 +53,24 @@ public class LegalSearchService extends BaseService {
 	@Autowired
 	KbeeRAGClient kbeeRAGClient;
 	
+	@Autowired
+	QueryLogService queryLogService;
 	
-	public LegalSearchService(Settings settings, DateTimeService dateService, QueryCacheService queryCacheService, QueryHistoryService queryHistoryService, DocumentAnalyzeCacheService documentAnalyzeCacheService, KbeeRAGClient kbeeRAGClient) {
+	
+	public LegalSearchService(Settings settings, DateTimeService dateService, QueryCacheService queryCacheService, QueryHistoryService queryHistoryService, DocumentAnalyzeCacheService documentAnalyzeCacheService, KbeeRAGClient kbeeRAGClient, QueryLogService queryLogService) {
 		super(settings);
 		this.dateService=dateService;
 		this.queryCacheService=queryCacheService;
 		this.queryHistoryService=queryHistoryService;
 		this.documentAnalyzeCacheService=documentAnalyzeCacheService;
 		this.kbeeRAGClient=kbeeRAGClient;
+		this.queryLogService=queryLogService;
 	
 	}
 
 	
-	public List<Sentencia> search(String text) {
-		return search(text, true);
+	public List<Sentencia> search(String text, User user, String sessionId) {
+		return search(text, user, sessionId, true);
 	}
 
 	/**
@@ -94,22 +109,26 @@ public class LegalSearchService extends BaseService {
 	 *                 {@code false} the search is always executed and the
 	 *                 result is not stored in the cache.
 	 */
-	public List<Sentencia> search(String text, boolean useCache) {
+	public List<Sentencia> search(String text, User user, String sessionId, boolean useCache) {
 
 		// record the query in the user's history (session-scoped)
 		getQueryHistoryService().record(text);
 
 		if (!useCache)
-			return executeSearch(text);
+			return executeSearch(text, user, sessionId);
 
 		// if the query is in the cache -> return the cached result
 		Optional<List<Sentencia>> cached = getQueryCacheService().get(text);
-		if (cached.isPresent())
+		
+		if (cached.isPresent()) {
 			return cached.get();
+		}
 
 		// otherwise perform the query and store the result in the cache
-		List<Sentencia> result = executeSearch(text);
+		List<Sentencia> result = executeSearch(text, user, sessionId);
 		getQueryCacheService().put(text, result);
+		
+		
 		return result;
 	}
 
@@ -439,17 +458,36 @@ Otro fragmento particularmente fuerte:
 	}
 
 	
-	/** Performs the actual search (not cached). */
-	protected List<Sentencia> executeSearch(String text) {
-		
+	/** Performs the actual search (not cached). Every query is logged in the database. */
+	protected List<Sentencia> executeSearch(String text, User user, String sessionId) {
+
+		long startTime = System.currentTimeMillis();
+
 		RagResponse response = this.kbeeRAGClient.executeQuery(text);
-		
+
+		long durationMillisecs = System.currentTimeMillis() - startTime;
+
+		// log the query in the database (results = json returned by the server)
+		getQueryLogService().log(text, toJson(response), durationMillisecs, user, sessionId);
+
 		RAGConverter ragConverter = new RAGConverter(response);
 
-		
-		List<Sentencia> li =  ragConverter.convert();
-		
+		List<Sentencia> li = ragConverter.convert();
+
 		return li;
+	}
+
+	public String toJson(RagResponse response) {
+		try {
+			return jsonMapper.writeValueAsString(response);
+		} catch (Exception e) {
+			logger.error(e, "could not serialize RagResponse");
+			return null;
+		}
+	}
+
+	public QueryLogService getQueryLogService() {
+		return this.queryLogService;
 	}
 
 	

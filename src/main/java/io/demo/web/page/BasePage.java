@@ -33,14 +33,21 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import io.demo.Logger;
+import io.demo.email.EmailTemplateService;
 import io.demo.model.User;
 import io.demo.model.db.service.UserDBService;
+import io.demo.model.db.service.PersistentTokenDBService;
+import io.demo.model.db.service.QueryDBService;
+import io.demo.model.db.service.QueryFeedbackDBService;
+import io.demo.model.db.service.StatDBService;
 import io.demo.service.DateTimeService;
 import io.demo.service.LegalSearchService;
 import io.demo.service.QueryHistoryService;
 import io.demo.service.ServiceLocator;
 import io.demo.service.TesauroService;
 import io.demo.service.UserSettingsService;
+import io.demo.web.panel.MenuEntry;
+import io.demo.web.panel.ObjectModel;
 import io.wktui.event.UIEvent;
 import io.wktui.nav.breadcrumb.BreadCrumb;
 import io.wktui.nav.breadcrumb.HREFBCElement;
@@ -118,6 +125,7 @@ public abstract class BasePage extends WebPage {
 	}
 
 	
+public abstract boolean canAccess(Optional<User> user); 
 
 	@Override
 	public void onDetach() {
@@ -373,10 +381,29 @@ public abstract class BasePage extends WebPage {
 	}
 	
 
-	public DateTimeService DateTimeService() {
+	public DateTimeService getDateTimeService() {
 		return (DateTimeService) ServiceLocator.getInstance().getBean( DateTimeService.class);
 	}
 	
+	
+	protected EmailTemplateService getEmailTemplateService() {
+		return (EmailTemplateService) ServiceLocator.getInstance().getBean(EmailTemplateService.class);
+	}
+
+	protected PersistentTokenDBService getPersistentTokenDBServiceDBService() {
+		return (PersistentTokenDBService) ServiceLocator.getInstance().getBean(PersistentTokenDBService.class);
+	}
+	
+	
+	public Optional<IModel<User>> getOptionalSessionUserModel() {
+		 
+		
+		if (this.getSessionUser().isPresent())
+			return Optional.of(this.getSessionUserModel());
+		 
+		return Optional.empty();
+
+	}
 	
 	
 	public Optional<User> getSessionUser() {
@@ -389,14 +416,18 @@ public abstract class BasePage extends WebPage {
 			return Optional.empty();
 		}
 
-		if (auth.getName().equals("anonymousUser"))
-			return Optional.empty();
+		//if (auth.getName().equals("anonymousUser"))
+		//	return Optional.empty();
 
 
 		UserDBService service = (UserDBService) ServiceLocator.getInstance().getBean(UserDBService.class);
 		Optional<User> o_user = service.findByUsername("root");
 
 		sessionUserModel = new ObjectModel<User>(o_user.get());
+
+		// log the sign-in (once per session)
+		logSignin(sessionUserModel.getObject());
+
 		return Optional.of(sessionUserModel.getObject());
 
 		
@@ -418,6 +449,40 @@ public abstract class BasePage extends WebPage {
 		if (getSessionUser().isEmpty())
 			return null;
 		return this.sessionUserModel;
+	}
+
+	/** Session metadata key used to log the sign-in only once per session. */
+	private static final org.apache.wicket.MetaDataKey<Boolean> SIGNIN_LOGGED = new org.apache.wicket.MetaDataKey<Boolean>() {
+		private static final long serialVersionUID = 1L;
+	};
+
+	/**
+	 * Logs the sign-in of the given user (once per session) via the
+	 * {@link StatDBService}.
+	 */
+	protected void logSignin(User user) {
+		try {
+			org.apache.wicket.Session session = org.apache.wicket.Session.get();
+
+			if (Boolean.TRUE.equals(session.getMetaData(SIGNIN_LOGGED)))
+				return;
+
+			// A temporary (unbound) session has no id yet -> bind it so getId() is not null
+			if (session.isTemporary())
+				session.bind();
+
+			String userAgent = ((WebRequest) getRequest()).getHeader("User-Agent");
+			getStatDBService().logSignin(user, session.getId(), userAgent);
+
+			session.setMetaData(SIGNIN_LOGGED, Boolean.TRUE);
+
+		} catch (Exception e) {
+			logger.error(e);
+		}
+	}
+
+	public StatDBService getStatDBService() {
+		return (StatDBService) ServiceLocator.getInstance().getBean(StatDBService.class);
 	}
 
 		
@@ -517,6 +582,7 @@ public abstract class BasePage extends WebPage {
         entries.add(MenuEntry.link("Home", "/home", true));
         entries.add(MenuEntry.link("Tesauro", "/tesauro", false));
         entries.add(MenuEntry.link("Comunidad", "/comunidad", false));
+        entries.add(MenuEntry.link("Usuarios", "/users", false));
         entries.add(MenuEntry.link("Preferencias", "/usersettings", false));
         return entries;
     }
@@ -588,7 +654,18 @@ public abstract class BasePage extends WebPage {
 	
 	
     
-    
+	public QueryDBService getQueryDBService() {
+		return (QueryDBService) ServiceLocator.getInstance().getBean(QueryDBService.class);
+	}
+	
+	public QueryFeedbackDBService getQueryFeedbackDBService() {
+		return (QueryFeedbackDBService) ServiceLocator.getInstance().getBean(QueryFeedbackDBService.class);
+	}
+
+
+	public UserDBService getUserDBService() {
+		return (UserDBService) ServiceLocator.getInstance().getBean(UserDBService.class);
+	}
     
     
 }

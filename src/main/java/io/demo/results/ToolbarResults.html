@@ -1,13 +1,122 @@
 
+
 <wicket:panel>
 
-	<div class="row">
-		<div class="mt-0 mb-0 col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
-			Ordenar por: [] | Resultados [] | Período: [] | Materia: []
+	<div wicket:id="container" class="w-100 border rounded bg-body-tertiary float-start pt-1 pb-1 ps-3 pe-3">
+
+		<div class="pt-1 pb-1 d-inline-block">
+
+
+			<!--  ORDEN  --------- -->
+
+			<div class="ps-1 pe-2 d-inline-block">
+
+				<div class="row">
+					<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
+						<span class="small text-uppercase d-inline-block fw-bold"><wicket:message key="order" /></span>
+					</div> 
+				</div>
+
+
+				<div class="row">
+					<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
+						<select wicket:id="order" class="form-select form-select-sm d-inline-block w-auto"></select>
+					</div>
+				</div>
+
+			</div>
+
+			<!-- -------------------------- -->
+
+
+
+			<!--   DATE RANGE  ------------ -->
+
+			<div class="ps-1 pe-2 d-inline-block">
+
+				<div class="row">
+					<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
+						<span class="small text-uppercase d-inline-block fw-bold"><wicket:message key="dateRange" /></span>
+					</div>
+				</div>
+			
+				<div class="row">
+					<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
+						<select wicket:id="daterange" class="form-select form-select-sm d-inline-block w-auto"></select>
+					</div>
+				</div>
+		
+			</div>
+
+			<!-- -------------------------- -->
+
+
+			<!--   SUBJECT  -->
+
+
+			<div class="ps-1 pe-2 d-inline-block">
+
+				<div class="row">
+					<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
+						<span class="small text-uppercase  d-inline-block fw-bold"><wicket:message key="subject" /></span>
+					</div>
+				</div>
+
+				<div class="row">
+					<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
+						<select wicket:id="subject" class="form-select form-select-sm d-inline-block w-auto"></select>
+					</div>
+				</div>
+							
+			</div>
+
+
+			<!-- -------------------------- -->
+
+
+
+			<!--   RANGE  MAX  -->
+
+			<div class="ps-1 pe-2 d-inline-block">
+
+				<div class="row">
+					<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
+						<span class="small text-uppercase  d-inline-block fw-bold"><wicket:message key="maxResults" /></span>
+					</div>
+				</div>
+
+				<div class="row">
+					<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
+						<select wicket:id="maxresults" class="form-select form-select-sm d-inline-block w-auto"></select>
+					</div>
+				</div>
+		
+			</div>
+			
+
+		</div>
+
+		<div class="pt-1 pb-1 d-inline-block float-end">
+			<div class="ps-2 pe-2 d-inline-block">
+
+				<div class="row">
+					<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
+						<span class="small text-uppercase  d-inline-block fw-bold"> </span>
+					</div>
+				</div>
+				
+				<div class="row">
+					<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
+						
+				<span class="small d-inline-block"><wicket:message key="total" />:</span> <b><span wicket:id="total"
+					class="d-inline-block"></span></b>
+					</div>
+				</div>
+				
+			
+			</div>
+		</div>
+
 	</div>
-	</div>
+
 </wicket:panel>
-
-
-
-

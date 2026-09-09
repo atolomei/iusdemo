@@ -27,7 +27,11 @@ import io.demo.service.TestQueriesService;
 import io.demo.service.UserSettingsService;
 import io.demo.service.rag.KbeeRAGClient;
 import io.demo.web.home.AnalysisPanel;
-import io.demo.web.page.DemoObjectListItemPanel;
+import io.demo.web.panel.DemoObjectListItemPanel;
+import io.demo.web.event.DateRangeEvent;
+import io.demo.web.event.OrderOptionEvent;
+import io.demo.web.event.SubjectOptionEvent;
+import io.demo.web.event.TotalOptionEvent;
 import io.wktui.error.AlertPanel;
 import io.wktui.error.ErrorPanel;
 import io.wktui.struct.list.ListPanel;
@@ -35,6 +39,7 @@ import io.wktui.struct.list.ListPanelMode;
 import wktui.base.BasePanel;
 import wktui.base.DummyBlockPanel;
 import wktui.base.InvisiblePanel;
+import wktui.base.UIEventListener;
 
 public class ResultsPanel<T extends Documento> extends BasePanel {
 
@@ -149,6 +154,51 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 		super.onBeforeRender();
 	}
 	
+	@Override
+	public void addListeners() {
+		super.addListeners();
+
+		add(new UIEventListener<OrderOptionEvent>() {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void onEvent(OrderOptionEvent event) {
+				logger.debug("onEvent: " + event.toString());
+				// TODO: update the panel with the new order
+			}
+		});
+
+		add(new UIEventListener<DateRangeEvent>() {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void onEvent(DateRangeEvent event) {
+				logger.debug("onEvent: " + event.toString());
+				// TODO: update the panel with the new date range
+			}
+		});
+
+		add(new UIEventListener<SubjectOptionEvent>() {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void onEvent(SubjectOptionEvent event) {
+				logger.debug("onEvent: " + event.toString());
+				// TODO: update the panel with the new subject
+			}
+		});
+
+		add(new UIEventListener<TotalOptionEvent>() {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void onEvent(TotalOptionEvent event) {
+				logger.debug("onEvent: " + event.toString());
+				// TODO: update the panel with the new max results
+			}
+		});
+	}
+	
 	
 	public void onInitialize() {
 		super.onInitialize();
@@ -212,7 +262,8 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 
 			
 			this.toolbar = new ToolbarResults("toolbar", null);
-			add(this.toolbar);
+			this.toolbar.setTotal(Integer.valueOf(getList().size()));
+			contentsContainerContainer.add(this.toolbar);
 			
 			
 			
@@ -304,16 +355,22 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 			};
 
 			this.panel.setHasExpander(true);
-			this.panel.setSettings(true);
+			this.panel.setSettings(false);
+			this.panel.setToolbarVisible(false);
 			
 			//this.panel.setTitle(getListPanelLabel());
 			this.panel.setListPanelMode(ListPanelMode.TITLE_TEXT);
 
 			contentsContainerContainer.add(this.panel);
 
+			// feedback editor: the user evaluates the query results
+			contentsContainerContainer.add(new QueryFeedbackEditor("feedback", getQuery()));
+
 		} catch (Exception e) {
 			logger.error(e);
 			contentsContainerContainer.addOrReplace(new ErrorPanel("contents", e));
+			if (contentsContainerContainer.get("feedback") == null)
+				contentsContainerContainer.add(new InvisiblePanel("feedback"));
 		}
 		
  

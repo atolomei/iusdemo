@@ -1,0 +1,75 @@
+<wicket:panel>
+
+	<div class="row" wicket:id="feedbackContainer">
+		<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
+
+			<!-- link to open the feedback editor -->
+			<div class="mt-2 mb-2" wicket:id="feedbackLookupContainer">
+				<a wicket:id="evaluate" class=" btn-link">Evaluar consulta</a>
+			</div>
+
+			<!-- feedback form -->
+			<div class="border rounded p-3 mt-2 mb-4" style="font-size: 1em;" wicket:id="feedbackFormContainer">
+
+
+				<div class="row">
+					<div class="mb-2 col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
+
+						<h3 style="font-size: 1em; font-weight: bold; text-transform: uppercase;">Evaluar consulta</h3>
+
+
+					</div>
+				</div>
+
+				<div class="row">
+					<div class="mb-2 col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
+						<div class="alert alert-info mb-2">
+							<b>Su opinión es importante</b> <br/>
+						
+						<span>	Por favor, califique la relevancia de los documentos sugeridos
+								 y, si lo desea, agregue un comentario. <br/>
+								 Si conoce otros documentos disponibles en la base que
+								considere más relevantes o útiles, le agradeceremos que los indique. <br/>
+								Su contribución nos ayuda a mejorar los
+								criterios de búsqueda y recuperación de jurisprudencia.<br /> 
+								Muchas gracias por su colaboración.
+							</span>
+						</div>
+
+					</div>
+				</div>
+
+
+
+				<form wicket:id="feedbackForm">
+					<div class="mb-3">
+						<label class="form-label" style="text-transform: uppercase; font-weight: bold; font-size: 0.9em;">Calificación</label>
+						<select wicket:id="grade" style="font-size: 0.92em;" class="form-select"></select>
+					</div>
+					<div class="mb-3">
+						<label class="form-label" style="text-transform: uppercase; font-weight: bold; font-size: 0.9em;">Comentario</label>
+						<textarea wicket:id="info" class="form-control" style="font-size: 0.92em;" rows="4"></textarea>
+					</div>
+
+
+
+
+					<button wicket:id="save" type="submit" class="btn btn-outline-primary btn-sm me-2">Grabar</button>
+
+
+					<a wicket:id="cancel" class="btn btn-outline-secondary btn-sm">Cancelar</a>
+				</form>
+				<div class="alert alert-danger mt-2 mb-0" wicket:id="error"></div>
+			</div>
+
+			<!-- success alert -->
+			<div class="mt-2 mb-2" wicket:id="feedbackSuccessContainer">
+				<div class="alert alert-success mb-0">
+					<span wicket:id="message"></span>
+				</div>
+			</div>
+
+		</div>
+	</div>
+
+</wicket:panel>

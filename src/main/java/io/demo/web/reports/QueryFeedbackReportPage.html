@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:wicket="http://wicket.apache.org">
+<body>
+	<wicket:extend>
+
+		<wicket:container wicket:id="top-panel" />
+
+		<div wicket:id="page-header"></div>
+
+		<main class="container-xxl main">
+
+			<div class="mt-4 mb-4" style="float: left; width: 100%; padding: 0;">
+				<div class="row">
+					<div class="col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12">
+						<h4>Evaluaciones de consultas</h4>
+					</div>
+				</div>
+
+				<div wicket:id="feedbackContainer">
+					<div class="row">
+						<div class="col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12">
+							<div style="float: left; width: 100%;" wicket:id="feedbackList"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+		</main>
+	</wicket:extend>
+</body>
+</html>

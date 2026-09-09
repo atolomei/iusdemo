@@ -1,4 +1,4 @@
-package io.demo.web.page;
+package io.demo.web.panel;
 
 import org.apache.wicket.markup.html.link.Link;
 import org.apache.wicket.markup.html.pages.RedirectPage;

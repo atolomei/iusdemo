@@ -16,10 +16,8 @@ public class JsonObject implements Jsonable {
 	static private Logger logger =	Logger.getLogger(JsonObject.class.getName());
 
 	@JsonIgnore 
-	static final private tools.jackson.databind.ObjectMapper mapper;
+	static final private ObjectMapper mapper;
 	
-	//new tools.jackson.databind.ObjectMapper();
-	  
 	static {
 		mapper = JsonMapper.builder()
 		        .disable(StreamReadFeature.AUTO_CLOSE_SOURCE)

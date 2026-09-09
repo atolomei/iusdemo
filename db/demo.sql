@@ -64,10 +64,10 @@ CREATE TABLE  Users (
 
 					
 CREATE TABLE  UserPreferences (
- 	id bigint              primary key default nextval('sequence_id'),
+ 	id bigint               primary key default nextval('sequence_id'),
 	 user_id 				bigint references users(id) not null, 
 	 preferences			text,
- 	created			 	timestamp with time zone DEFAULT now() not null,
+ 	created			 	    timestamp with time zone DEFAULT now() not null,
  	lastmodified		 	timestamp with time zone DEFAULT now() not null,
  	lastmodifieduser	    bigint references users(id) on delete restrict not null
 );
@@ -94,9 +94,24 @@ CREATE TABLE  Query (
  durationMillisecs	    bigint default 0,
  created			 	timestamp with time zone DEFAULT now() not null,
  lastmodified		 	timestamp with time zone DEFAULT now() not null,
- lastmodifieduser	 bigint references users(id) on delete restrict not null
+ lastmodifieduser	    bigint references users(id) on delete restrict not null
 );
 
+
+CREATE TABLE  QueryFeedback  (
+ id                     bigint primary key default nextval('sequence_id'),
+ query_id               bigint references query(id) on delete cascade not null, 
+ info         	 		text,
+ grade                  int default -1,
+ created			 	timestamp with time zone DEFAULT now() not null,
+ lastmodified		 	timestamp with time zone DEFAULT now() not null,
+ lastmodifieduser	    bigint references users(id) on delete restrict not null
+);
+
+ alter table queryFeedback add column name character varying(1024);
+ alter table queryFeedback add column state integer default 1;
+ 
+ 
 
 CREATE TABLE  DocumentAnalyze (
  id bigint              primary key default nextval('sequence_id'),
@@ -120,6 +135,9 @@ id bigint               primary key default nextval('sequence_visit_id'),
  );
 
 				
+ALTER TABLE stat ADD COLUMN action varchar(64);
+ALTER TABLE stat ADD COLUMN user_id bigint REFERENCES users(id);
+
 					
 COMMIT;
 	

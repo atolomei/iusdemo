@@ -8,11 +8,12 @@ import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.demo.Logger;
+import io.demo.model.DemoObjectMapper;
 import jakarta.annotation.PostConstruct;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Service containing a map of test queries.
@@ -31,7 +32,7 @@ public class TestQueriesService extends BaseService {
 	/** Key: trim(toLowerCase(query)) -> documentId of the expected relevant sentencia. */
 	private Map<String, String> testQueries = new HashMap<>();
 
-	private final ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
+	private final ObjectMapper mapper = new DemoObjectMapper();
 
 	public TestQueriesService(Settings settings) {
 		super(settings);
@@ -74,7 +75,7 @@ public class TestQueriesService extends BaseService {
 			try {
 				Map<String, String> entries = mapper.readValue(file, new TypeReference<Map<String, String>>() {});
 				entries.forEach((query, documentId) -> this.testQueries.put(key(query), documentId));
-			} catch (IOException e) {
+			} catch (Exception e) {
 				logger.error(e);
 			}
 		}

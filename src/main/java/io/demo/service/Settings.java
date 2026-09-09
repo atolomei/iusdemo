@@ -192,6 +192,17 @@ public class Settings {
 
 	/** ---------------------------------------------------------------------- */
 
+	
+	@Value("${help.dir:help}")
+	protected String helpDir;
+
+	public String getHelpDir() {
+		return helpDir;
+	}
+	
+	
+	
+	
 	public Settings() {
 	}
 
@@ -430,5 +441,37 @@ public class Settings {
 	/** Directory containing the test queries JSON files ("testqueries"). */
 	public String getTestQueriesDir() {
 		return testQueriesDir;
+	}
+
+
+
+
+	public boolean isEmailSenderEnabled() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+
+
+
+	public String getEmailFrom() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+
+
+	public String getEmailApiKey() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+
+
+	public String getEmailBaseurl() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

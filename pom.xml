@@ -477,10 +477,15 @@
 			<artifactId>junit-jupiter-api</artifactId>
 			<scope>test</scope>
 		</dependency>
+	
+	
+	 
+
+		<!-- Wicket 10 version of the serializer pulled in transitively by kbee-wfc-wicket -->
 		<dependency>
-			<groupId>com.novamens</groupId>
-			<artifactId>kbee-wfc-wicket</artifactId>
-			<version>8.5-SNAPSHOT</version>
+			<groupId>org.wicketstuff</groupId>
+			<artifactId>wicketstuff-serializer-common</artifactId>
+			<version>${wicket-version}</version>
 		</dependency>
 	</dependencies>
 

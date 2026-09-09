@@ -12,17 +12,19 @@ import org.springframework.stereotype.Component;
 import com.giffing.wicket.spring.boot.starter.app.WicketBootSecuredWebApplication;
 import com.giffing.wicket.spring.boot.starter.configuration.extensions.external.spring.security.SecureWebSession;
 
+import io.demo.help.HelpImageResource;
 import io.demo.web.home.DemoHomePage;
+import io.demo.web.security.LoginPage;
 
 
  
 @Component
 public class WicketWebApplication extends WicketBootSecuredWebApplication {
 
-//	@Override
-//	protected Class<? extends WebPage> getSignInPageClass() {
-//		return LoginPage.class;
-//	}
+	@Override
+	protected Class<? extends WebPage> getSignInPageClass() {
+		return LoginPage.class;
+	}
 
 	@Override
 	public Class<? extends Page> getHomePage() {
@@ -38,7 +40,7 @@ public class WicketWebApplication extends WicketBootSecuredWebApplication {
 	public void init() {
 		super.init();
 
-		/**
+	 
 		// ⭐ Serve help images from filesystem (helpDir/images/)
 		mountResource("/help/images/${name}", new ResourceReference("helpImages") {
 			private static final long serialVersionUID = 1L;
@@ -57,7 +59,7 @@ public class WicketWebApplication extends WicketBootSecuredWebApplication {
 			}
 		});
 
-*/
+ 
 		
 		getComponentInstantiationListeners().add(new SpringComponentInjector(this));
 

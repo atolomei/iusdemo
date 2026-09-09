@@ -1,6 +1,7 @@
 package io.demo.web.tesauro;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.model.IModel;
@@ -8,6 +9,8 @@ import org.apache.wicket.model.Model;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.wicketstuff.annotation.mount.MountPath;
 
+import io.demo.model.Role;
+import io.demo.model.User;
 import io.demo.results.ResultsPanel;
 import io.demo.web.home.DemoHomePage;
 import io.demo.web.home.SearchFormEditor;
@@ -34,6 +37,25 @@ public class TesauroPage extends BasePage {
     }
     
     
+	@Override
+	public boolean canAccess(Optional<User> ouser) {
+		
+		if (ouser.isEmpty())
+			return false;
+		
+		
+		
+		Role role = ouser.get().getRole();
+		
+		if (role==null)
+			return false;
+		
+	
+		return role== Role.SYSADMIN || role== Role.ADMIN;
+		
+		
+	} 
+	
     public void onInitialize() {
 		super.onInitialize();
 	

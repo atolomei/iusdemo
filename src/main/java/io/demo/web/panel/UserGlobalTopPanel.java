@@ -1,98 +1,103 @@
-package io.demo.web.page;
+package io.demo.web.panel;
 
-import org.apache.wicket.markup.html.panel.Panel;
+import org.apache.wicket.markup.html.image.Image;
+import org.apache.wicket.markup.html.pages.RedirectPage;
 import org.apache.wicket.model.IModel;
+import org.apache.wicket.model.Model;
+import org.apache.wicket.request.resource.PackageResourceReference;
 
 import io.demo.model.User;
+import io.wktui.nav.menu.LinkMenuItem;
+import io.wktui.nav.menu.MenuItemPanel;
 import io.wktui.nav.menu.NavDropDownMenu;
 import wktui.base.ModelPanel;
 
+/**
+ * User area of the global top panel: drop-down menu (My Account, My
+ * Preferences, Sign out) and the user's avatar.
+ *
+ * The avatar is the default image flower1.jpg packaged next to this class
+ * (instead of the AvatarService or the user's photo).
+ */
 public class UserGlobalTopPanel extends ModelPanel<User> {
+
+	private static final long serialVersionUID = 1L;
 
 	public UserGlobalTopPanel(String id, IModel<User> model) {
 		super(id, model);
+		setOutputMarkupId(true);
 	}
 
-	/**
+	@Override
+	public void onInitialize() {
+		super.onInitialize();
+
+		add(getMenu());
+
+		// default image, instead of the AvatarService or the user's photo
+		add(new Image("image", new PackageResourceReference(UserGlobalTopPanel.class, "flower1.jpg")));
+	}
+
 	private NavDropDownMenu<Void> getMenu() {
 
 		NavDropDownMenu<Void> menu = new NavDropDownMenu<Void>("userMenu");
 
-		//menu.setMenuAlignEnd(true);
-
-		// menu.setIconCss("d-block-inline fa-2x fa-duotone fa-solid fa-user ps-2
-		// pe-2");
-		// menu.setIconCss("d-block-inline fa-user ps-2 pe-2");
-
-		Optional<Person> o = getPersonDBService().getByUser(getModel().getObject());
-
-		menu.setTitle(new Model<String>(getModel().getObject().getDisplayname()));
-
-		if (o.isPresent())
-			menu.setSubtitle(Model.of(o.get().getFirstLastname()));
-
+		if (getModel() != null && getModel().getObject() != null) {
+			menu.setTitle(Model.of(getModel().getObject().getUsername()));
+			menu.setSubtitle(Model.of(getModel().getObject().getEmail()));
+			
+		}
+		else
+			menu.setTitle(Model.of("[null]"));
+		
+		
+		
+		
+		// My Account
 		menu.addItem(new io.wktui.nav.menu.MenuItemFactory<Void>() {
-
 			private static final long serialVersionUID = 1L;
 
 			@Override
 			public MenuItemPanel<Void> getItem(String id) {
-
 				return new LinkMenuItem<Void>(id) {
-
 					private static final long serialVersionUID = 1L;
 
 					@Override
 					public void onClick() {
-						setResponsePage(new UserPage(UserGlobalTopPanel.this.getModel(), true));
+						setResponsePage(new RedirectPage("/myaccount"));
 					}
 
 					@Override
 					public IModel<String> getLabel() {
-						return getLabel("account");
-					}
-
-					@Override
-					public String getBeforeClick() {
-						return null;
+						return getLabel("my-account");
 					}
 				};
 			}
 		});
 
+		// My Preferences
 		menu.addItem(new io.wktui.nav.menu.MenuItemFactory<Void>() {
-
 			private static final long serialVersionUID = 1L;
 
 			@Override
 			public MenuItemPanel<Void> getItem(String id) {
-
 				return new LinkMenuItem<Void>(id) {
-
 					private static final long serialVersionUID = 1L;
 
 					@Override
 					public void onClick() {
-						Optional<Person> o = getPersonDBService().getByUser(UserGlobalTopPanel.this.getModel().getObject());
-						if (o.isPresent())
-							setResponsePage(new PersonPage(new ObjectModel<Person>(o.get())));
-						else
-							setResponsePage(new ErrorPage(Model.of("not found")));
+						setResponsePage(new RedirectPage("/usersettings"));
 					}
 
 					@Override
 					public IModel<String> getLabel() {
-						return getLabel("personal-info");
-					}
-
-					@Override
-					public String getBeforeClick() {
-						return null;
+						return getLabel("my-preferences");
 					}
 				};
 			}
 		});
 
+		// separator
 		menu.addItem(new io.wktui.nav.menu.MenuItemFactory<Void>() {
 			private static final long serialVersionUID = 1L;
 
@@ -102,15 +107,13 @@ public class UserGlobalTopPanel extends ModelPanel<User> {
 			}
 		});
 
+		// Sign out
 		menu.addItem(new io.wktui.nav.menu.MenuItemFactory<Void>() {
-
 			private static final long serialVersionUID = 1L;
 
 			@Override
 			public MenuItemPanel<Void> getItem(String id) {
-
 				return new LinkMenuItem<Void>(id) {
-
 					private static final long serialVersionUID = 1L;
 
 					@Override
@@ -121,12 +124,6 @@ public class UserGlobalTopPanel extends ModelPanel<User> {
 					@Override
 					public IModel<String> getLabel() {
 						return getLabel("sign-out");
-
-					}
-
-					@Override
-					public String getBeforeClick() {
-						return null;
 					}
 				};
 			}
@@ -134,11 +131,4 @@ public class UserGlobalTopPanel extends ModelPanel<User> {
 
 		return menu;
 	}
-	
-	*/
-
-	/**protected PersonDBService getPersonDBService() {
-		return (PersonDBService) ServiceLocator.getInstance().getBean(PersonDBService.class);
-	}*/
-	
 }

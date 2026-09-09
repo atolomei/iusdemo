@@ -26,11 +26,7 @@ public class DocumentAnalyzeDBService extends DBService<DocumentAnalyze, Long> {
 		super(repository, settings);
 	}
 
-	@PostConstruct
-	protected void onInitialize() {
-		DBService.register(DocumentAnalyze.class, this);
-	}
-
+	 
 	@Transactional
 	public List<DocumentAnalyze> getByQuery(Query query) {
 		CriteriaBuilder cb = getEntityManager().getCriteriaBuilder();
@@ -60,4 +56,11 @@ public class DocumentAnalyzeDBService extends DBService<DocumentAnalyze, Long> {
 	protected Class<DocumentAnalyze> getEntityClass() {
 		return DocumentAnalyze.class;
 	}
+	
+	@PostConstruct
+	protected void onInitialize() {
+		super.register(getEntityClass(), this);
+	}
+	
+	
 }

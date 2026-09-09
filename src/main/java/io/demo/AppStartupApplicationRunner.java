@@ -2,6 +2,7 @@ package io.demo;
 
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Locale;
 
 import java.io.File;
@@ -16,7 +17,14 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import io.demo.model.User;
+import io.demo.model.db.service.UserDBService;
+import io.demo.service.LegalSearchService;
+import io.demo.service.QueryLogService;
+import io.demo.service.ServiceLocator;
 import io.demo.service.Settings;
+import io.demo.service.rag.KbeeRAGClient;
+import io.demo.service.rag.RagResponse;
 import io.demo.util.Constant;
 
 
@@ -99,12 +107,105 @@ public class AppStartupApplicationRunner implements ApplicationRunner {
 
 		startupLogger.info(Constant.SEPARATOR);
 
+		setupRootUser();
+
 		for (String s : args.getSourceArgs()) {
 			logger.debug(s);
 		}
 	}
 
+	/**
+	 * Ensures the {@code root} user exists with a valid password.
+	 * <p>
+	 * The initial password can be set with the environment variable
+	 * {@code DEMO_ROOT_PASSWORD} (defaults to {@code root}). Passwords are stored
+	 * encoded by the application's {@link org.springframework.security.crypto.password.PasswordEncoder}
+	 * (i.e. {@code {bcrypt}...}), which is what Spring Security expects at login.
+	 * </p>
+	 */
+	private void setupRootUser() {
+
+		UserDBService users = getAppContext().getBean(UserDBService.class);
+
+		java.util.Optional<User> oRoot = users.findByUsername("root");
+
+		if (oRoot.isEmpty()) {
+			String rawPassword = System.getenv().getOrDefault("DEMO_ROOT_PASSWORD", "root");
+			User root = users.create("root", null);
+			root.setRole(io.demo.model.Role.SYSADMIN);
+			users.updatePassword(root, rawPassword, root);
+			startupLogger.info("root user created (change the default password!)");
+			return;
+		}
+
+		// migrate legacy raw-bcrypt hashes (no {bcrypt} prefix) so the
+		// delegating PasswordEncoder can validate them
+		User root = oRoot.get();
+		String p = root.getPassword();
+		if (p != null && p.startsWith("$2") && !p.startsWith("{")) {
+			root.setPassword("{bcrypt}" + p);
+			users.save(root);
+			startupLogger.info("root password hash migrated to {bcrypt} format");
+		}
+	}
+	
+	
+	/**
+	 * 
+	 * 
 	 
+	 
+	  UPDATE users SET password = '{bcrypt}$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG' WHERE name = 'root';
+
+
+That hash corresponds to the plain text root (a commonly used test hash). After running it, sign in on /signin with root / root.
+
+
+Notes:
+
+	•  The {bcrypt} prefix is required because your SecurityConfig uses the delegating password encoder.
+	•  If your table/column names differ (e.g. users, username), adjust accordingly — check the @Table/@Column annotations on User.java.
+	•  To generate your own hash instead:
+	
+	
+System.out.println("{bcrypt}" + new BCryptPasswordEncoder().encode("root"));
+
+
+
+	 * 
+	 */
+	  
+	        	
+
+	 
+	
+	 /**
+		  @Bean CommandLineRunner loghistory() {
+			  
+		        return args -> {
+		  
+		        try {
+		  
+		         
+		        	UserDBService users = ((UserDBService) ServiceLocator.getInstance().getBean(UserDBService.class));
+		        	 
+		        	
+		        	
+		        	User root = users.findByUsername("root").orElseThrow(() -> new Exception("Root user not found"));
+		        	root.setPassword("root");
+		  		        	
+		        	users.save(root);
+		        	
+		        	logger.debug("done");
+		  
+		        } catch (Exception e) { logger.error(e); } }; 
+		       
+		  
+		  }
+	**/
+	
+	
+	
 
 	public ApplicationContext getAppContext() {
 		return appContext;

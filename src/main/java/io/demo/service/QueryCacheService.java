@@ -15,14 +15,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 
+import io.demo.model.DemoObjectMapper;
 import io.demo.model.Sentencia;
 import jakarta.annotation.PostConstruct;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Cache of queries executed on the {@link LegalSearchService}.
@@ -44,8 +45,8 @@ public class QueryCacheService extends BaseService {
 
 	/** Jackson mapper used to persist cache entries on disk. */
 	@JsonIgnore
-	private final ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
-
+	private final ObjectMapper mapper = new DemoObjectMapper();
+	
 	public QueryCacheService(Settings settings, DateTimeService dateService) {
 		super(settings);
 		this.dateService = dateService;
@@ -125,7 +126,7 @@ public class QueryCacheService extends BaseService {
 				List<Sentencia> value = mapper.readValue(file, new TypeReference<List<Sentencia>>() {});
 				String key = file.getName().substring(0, file.getName().length() - ".json".length());
 				getCache().put(key, value);
-			} catch (IOException e) {
+			} catch (Exception e) {
 				logger.error(e);
 				FileUtils.deleteQuietly(file);
 			}
@@ -136,7 +137,7 @@ public class QueryCacheService extends BaseService {
 	protected void writeToDisk(String key, List<Sentencia> value) {
 		try {
 			mapper.writerWithDefaultPrettyPrinter().writeValue(file(key), value);
-		} catch (IOException e) {
+		} catch (Exception e) {
 			logger.error(e);
 		}
 	}

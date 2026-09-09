@@ -80,6 +80,8 @@ import jakarta.persistence.Transient;
 @JsonInclude(Include.NON_NULL)
 public class Stat extends JsonObject implements Identifiable {
 
+	
+	/* jackson 3 */
 	@JsonIgnore
 	static final private ObjectMapper hb6mapper = new DemoObjectMapper();
 
@@ -110,6 +112,35 @@ public class Stat extends JsonObject implements Identifiable {
 
 	@Column(name = "language")
 	private String language;
+
+	/** action logged, e.g. {@link #ACTION_SIGNIN} */
+	@Column(name = "action")
+	private String action;
+
+	/** user that performed the action (nullable for anonymous visits) */
+	@ManyToOne(fetch = FetchType.LAZY, targetEntity = User.class)
+	@Fetch(FetchMode.SELECT)
+	@JoinColumn(name = "user_id", nullable = true)
+	@JsonIgnore
+	private User user;
+
+	public static final String ACTION_SIGNIN = "SIGNIN";
+
+	public String getAction() {
+		return action;
+	}
+
+	public void setAction(String action) {
+		this.action = action;
+	}
+
+	public User getUser() {
+		return user;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
+	}
 
 	public String getUserAgent() {
 		return userAgent;
