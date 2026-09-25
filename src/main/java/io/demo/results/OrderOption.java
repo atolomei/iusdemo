@@ -6,8 +6,8 @@ package io.demo.results;
 public enum OrderOption {
 
 	MAS_RECIENTES("Más recientes"),
-	MAS_RELEVANTES("Más relevantes"),
-	MAYOR_COINCIDENCIA("Mayor coincidencia");
+	MAS_RELEVANTES("Más relevantes");
+	//MAYOR_COINCIDENCIA("Mayor coincidencia");
 
 	private final String label;
 

@@ -17,6 +17,7 @@ import io.demo.model.DemoObject;
 import io.demo.model.DemoObjectMapper;
 import io.demo.model.ObjectState;
 import io.demo.model.User;
+import io.demo.service.ServiceLocator;
 import io.demo.service.Settings;
 import io.demo.service.SystemService;
 import jakarta.persistence.EntityManager;
@@ -56,6 +57,11 @@ public abstract class DBService<T extends DemoDBObject, I> extends BaseDBService
 
 	private static Map<Class<?>, DBService<?, Long>> map = new HashMap<Class<?>, DBService<?, Long>>();
 
+	
+	protected abstract Class<T> getEntityClass();
+
+	
+	
 	public static void register(Class<?> entityClass, DBService<?, Long> dbService) {
 		map.put(entityClass, dbService);
 	}
@@ -64,6 +70,8 @@ public abstract class DBService<T extends DemoDBObject, I> extends BaseDBService
 		return map.get(entityClass);
 	}
 
+	
+	
 	/**
 	 * @param repository
 	 * @param settings
@@ -253,7 +261,13 @@ public abstract class DBService<T extends DemoDBObject, I> extends BaseDBService
 		return repository;
 	}
 
-	protected abstract Class<T> getEntityClass();
+	
+	
+
+	public UserDBService getUserDBService() {
+		return (UserDBService) ServiceLocator.getInstance().getBean(UserDBService.class);
+	}
+
 
 	public String getObjectClassName() {
 		return this.getEntityClass().getSimpleName().toLowerCase();

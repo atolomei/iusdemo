@@ -40,6 +40,9 @@ public class WicketWebApplication extends WicketBootSecuredWebApplication {
 	public void init() {
 		super.init();
 
+		
+		getFrameworkSettings().setSerializer(new org.apache.wicket.serialize.java.JavaSerializer(getApplicationKey()));
+		
 	 
 		// ⭐ Serve help images from filesystem (helpDir/images/)
 		mountResource("/help/images/${name}", new ResourceReference("helpImages") {

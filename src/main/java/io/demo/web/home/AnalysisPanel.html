@@ -1,4 +1,3 @@
-
 <wicket:panel>
 
 
@@ -11,35 +10,89 @@
 			<div class="bg-light border rounded col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
 
 
+				<!--  START - SENTENCIA SUBTITLE (tribunal - fecha) ------------------------------- -->
 
-
-
-				<!--  START - SUMARIOS  ------------------------------- -->
-
-
-
-				<div class="w-100 ps-3 pe-3 mt-2" wicket:id="sumariosContainer">
-
+				<!-- div class="w-100 ps-3 pe-3 mt-2">
 					<div class="row">
 						<div class="mt-2 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
-							<h4>Sumarios</h4>
+							<h5 class="text-muted" wicket:id="sentenciaSubtitle"></h5>
+						</div>
+					</div>
+				</div -->
+
+				<!--  END - SENTENCIA SUBTITLE  ------------------------------- -->
+
+
+
+
+
+
+
+
+
+				<!--  START - WHY THIS DOC IS RELEVANT FOR THE QUERY ------------------------------- -->
+
+
+				<div class="w-100 ps-3 pe-3 mt-2" wicket:id="analysisLookupContainer">
+					<div class="row">
+						<div class="mt-2 mb-2 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+							<a wicket:id="show"> Por qué es relevante</a>
+						</div>
+					</div>
+
+
+				</div>
+
+				<!--  this panel to be displayed only after the user clicks on "lookup  -->
+
+				<div class="w-100 ps-3 pe-3 mt-2" wicket:id="analysisContainer">
+					<div class="row">
+						<div class="mt-4 mb-0 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+							<h4>Por qué es relevante</h4>
 						</div>
 					</div>
 
 					<div class="row">
 						<div class="mb-2 mt-0 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
-							<ul wicket:id="sumarios" class="list-group mt-0">
-								<li class="ps-0 list-group-item border-0 bg-light" wicket:id="quote"><span wicket:id="sumario-text"></span></li>
-							</ul>
-							<span wicket:id="noSumariosQuotes"></span>
+						
+							<div class="analysis border rounded p-3 mb-2">
+                                <span wicket:id="analysis"></span> 
+                                <span wicket:id="noInfoAnalysis"></span>
+							</div>
+					
+					
+						</div>
+					
+						<div class="row">
+						<div class="mb-4 mt-0 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+							<a wicket:id="close"> <i> cerrar por qué es relevante</i></a>
+						
+						</div>
+					</div>
+					
+					
+					
+					</div>
+				</div>
+
+				<!-- END - WHY THIS DOC IS RELEVANT FOR THE QUERY ------------------------------- -->
+				
+				
+				
+				
+				
+				
+				<!--  START - CITAS LOOKUP LINK ------------------------------- -->
+
+				<div class="w-100 ps-3 pe-3 mt-1" wicket:id="citasLookupContainer">
+					<div class="row">
+						<div class="mt-2 mb-2 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+							<a wicket:id="showCitas"> Citas Jurisprudenciales y normativas</a>
 						</div>
 					</div>
 				</div>
 
-
-				<!--  END - SUMARIOS  ------------------------------- -->
-
-
+				<!--  END - CITAS LOOKUP LINK ------------------------------- -->
 
 
 				<!--  START - CITAS  FALLOS   ------------------------------- -->
@@ -91,56 +144,78 @@
 
 						</div>
 					</div>
+
+					<div class="row">
+						<div class="mb-4 mt-0 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+							<a wicket:id="closeCitas"><i> Cerrar citas Jurisprudenciales y normativas</i></a>
+						</div>
+					</div>
 				</div>
 
 				<!--  END - CITAS  NORMAS   ------------------------------- -->
 
 
 
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				 
 
+				<!--  START - SUMARIOS LOOKUP LINK ------------------------------- -->
 
-
-				<!--  START - WHY THIS DOC IS RELEVANT FOR THE QUERY ------------------------------- -->
-
-
-				<div class="w-100 ps-3 pe-3 mt-2" wicket:id="analysisLookupContainer">
+				<div class="w-100 ps-3 pe-3 mt-2" wicket:id="sumariosLookupContainer">
 					<div class="row">
-						<div class="mt-2 mb-4 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
-							<a wicket:id="show"> Por qué es relevante ?</a>
+						<div class="mt-2 mb-2 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+							<a wicket:id="showSumarios"> Sumarios</a>
 						</div>
 					</div>
-
-
 				</div>
 
-				<!--  this panel to be displayed only after the user clicks on "lookup  -->
+				<!--  END - SUMARIOS LOOKUP LINK ------------------------------- -->
 
-				<div class="w-100 ps-3 pe-3 mt-2" wicket:id="analysisContainer">
+
+				<!--  START - SUMARIOS  ------------------------------- -->
+
+
+
+				<div class="w-100 ps-3 pe-3 mt-2" wicket:id="sumariosContainer">
+
 					<div class="row">
-						<div class="mt-4 mb-0 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
-							<h4>Por qué es relevante</h4>
+						<div class="mt-2 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+							<h4>Sumarios</h4>
 						</div>
 					</div>
 
 					<div class="row">
 						<div class="mb-2 mt-0 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
-							<span wicket:id="analysis"></span> 
-							<span wicket:id="noInfoAnalysis"></span>
-						</div>
-					
-						<div class="row">
-						<div class="mb-4 mt-0 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
-							<a wicket:id="close"> cerrar</a>
-						
+							<ul wicket:id="sumarios" class="list-group mt-0">
+								<li class="ps-0 list-group-item border-0 bg-light" wicket:id="quote">
+									<strong wicket:id="sumario-title"></strong>
+									<div wicket:id="sumario-text"></div>
+								</li>
+							</ul>
+							<span wicket:id="noSumariosQuotes"></span>
 						</div>
 					</div>
-					
-					
-					
+
+					<div class="row">
+						<div class="mb-4 mt-0 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+							<a wicket:id="closeSumarios"> cerrar sumarios</a>
+						</div>
 					</div>
 				</div>
 
-				<!-- END - WHY THIS DOC IS RELEVANT FOR THE QUERY ------------------------------- -->
+
+				<!--  END - SUMARIOS  ------------------------------- -->
+
+
+
 
 
 

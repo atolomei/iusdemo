@@ -8,6 +8,8 @@ import org.apache.wicket.request.resource.PackageResourceReference;
 import org.apache.wicket.model.Model;
 
 import io.demo.model.User;
+import io.demo.model.db.service.UserDBService;
+import io.demo.service.ServiceLocator;
 import io.wktui.nav.menu.MainMenu;
 import wktui.base.ModelPanel;
 
@@ -17,6 +19,7 @@ public class GlobalTopPanel extends ModelPanel<User> {
 
 	
 	
+	private static final long serialVersionUID = 1L;
 	private Panel userGlobalTopPanel;
 
 	
@@ -59,13 +62,24 @@ public class GlobalTopPanel extends ModelPanel<User> {
 		// global hamburger main menu
 		MainMenu mainMenu = new MainMenu("mainMenu");
 		mainMenu.addLink(Model.of("Portada"), "/home");
-		mainMenu.addLink(Model.of("Usuarios"), "/users");
+
+		
+		if (isRoot() || isAdmin())
+			mainMenu.addLink(Model.of("Usuarios"), "/users");
 	
+		
 		//mainMenu.addLink(Model.of("Configuration"), "#");
 		mainMenu.addTitle(Model.of("Reportes"));
-		mainMenu.addLink(Model.of("Visitas"), "/reports/visits");
+		
 		mainMenu.addLink(Model.of("Consultas"), "/reports/queries");
-		mainMenu.addLink(Model.of("Evaluaciones"), "/reports/queryfeedback");
+
+		
+		if (isRoot() || isAdmin())
+		mainMenu.addLink(Model.of("Visitas"), "/reports/visits");
+
+		
+		if (isRoot() || isAdmin())
+			mainMenu.addLink(Model.of("Evaluaciones"), "/reports/queryfeedback");
 		
 		add(mainMenu);
 
@@ -76,5 +90,18 @@ public class GlobalTopPanel extends ModelPanel<User> {
 	
 	}
 	
+	
+	protected boolean isAdmin() {
+		return getUserDBService().isAdmin(getModel().getObject());
+	}
+	
+	
+	protected boolean isRoot() {
+		return getUserDBService().isRoot(getModel().getObject());
+	}
 
+	protected UserDBService getUserDBService() {
+		return (UserDBService) ServiceLocator.getInstance().getBean(UserDBService.class);
+	}
+	
 }

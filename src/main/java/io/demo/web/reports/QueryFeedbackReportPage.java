@@ -26,6 +26,7 @@ import io.demo.model.db.service.QueryFeedbackDBService;
 import io.demo.model.db.service.UserDBService;
 import io.demo.service.ServiceLocator;
 import io.demo.web.page.DemoBasePage;
+import io.demo.web.panel.PageHeaderPanel;
 import io.demo.web.panel.SimpleHeaderPanel;
 import io.wktui.error.ErrorPanel;
 import io.wktui.nav.breadcrumb.BreadCrumb;
@@ -116,8 +117,9 @@ public class QueryFeedbackReportPage extends DemoBasePage {
 			BreadCrumb<Void> bc = createBreadCrumb();
 			bc.addElement(new io.wktui.nav.breadcrumb.BCElement(Model.of("evaluaciones")));
 
-			SimpleHeaderPanel ph = new SimpleHeaderPanel("page-header", getOptionalSessionUserModel());
+			PageHeaderPanel<User> ph = new PageHeaderPanel<User>("page-header", getSessionUserModel(), Model.of("Evaluaciones"));
 			ph.setBreadCrumb(bc);
+		
 			return ph;
 
 		} catch (Exception e) {
@@ -245,5 +247,11 @@ public class QueryFeedbackReportPage extends DemoBasePage {
 			add(new Label("info", row.getInfo() != null ? row.getInfo() : ""));
 			
 		}
+	}
+
+	@Override
+	protected void addListeners() {
+		// TODO Auto-generated method stub
+		
 	}
 }

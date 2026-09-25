@@ -23,8 +23,13 @@ import org.wicketstuff.annotation.mount.MountPath;
 import com.giffing.wicket.spring.boot.context.scan.WicketSignInPage;
 import com.giffing.wicket.spring.boot.starter.configuration.extensions.external.spring.security.SecureWebSession;
 
+import io.demo.App;
 import io.demo.Logger;
 import io.demo.model.User;
+import io.demo.model.db.service.StatDBService;
+import io.demo.model.db.service.UserDBService;
+import io.demo.service.ServiceLocator;
+import io.demo.web.page.BasePage;
 import io.wktui.error.AlertPanel;
 import io.wktui.form.Form;
 import io.wktui.form.FormState;
@@ -45,7 +50,7 @@ import wktui.bootstrap.Bootstrap;
  */
 @WicketSignInPage
 @MountPath("/signin")
-public class LoginPage extends WebPage {
+public class LoginPage extends BasePage {
 
 	private static final long serialVersionUID = 1L;
 
@@ -63,10 +68,7 @@ public class LoginPage extends WebPage {
 
 	private boolean isError = false;
 
-	public LoginPage() {
-		super();
-	}
-
+	
 	public LoginPage(PageParameters parameters) {
 		super(parameters);
 		if (getPageParameters() != null) {
@@ -90,13 +92,24 @@ public class LoginPage extends WebPage {
 	}
 
 	@Override
-	protected void onInitialize() {
+	protected void checkAccess() {
+	}
+
+	
+	@Override
+	public void onInitialize() {
 		super.onInitialize();
+
+		// already signed in -> go home
+		if (((SecureWebSession) getSession()).isSignedIn()) {
+			setResponsePage(getApplication().getHomePage());
+			return;
+		}
 
 		if (getSession().isTemporary())
 			getSession().bind();
 
-		add(new Image("miniLogo", new PackageResourceReference(LoginPage.class, "kbee.png")));
+		add(new Image("miniLogo", new PackageResourceReference(App.class, "pjsf.png")));
 
 		alertContainer = new WebMarkupContainer("alertContainer");
 		add(alertContainer);
@@ -130,7 +143,7 @@ public class LoginPage extends WebPage {
 					ServletWebRequest servletWebRequest = (ServletWebRequest) RequestCycle.get().getRequest();
 					HttpServletRequest httpRequest = (HttpServletRequest) servletWebRequest.getContainerRequest();
 					String ipAddress = httpRequest.getRemoteAddr();
-					logger.warn("Invalid username or password -> u." + username + " ip." + ipAddress);
+					logger.warn("Invalid username or password -> u:" + username + "|  p: " + password + " ip." + ipAddress);
 					try {
 						Thread.sleep(500);
 					} catch (InterruptedException e) {
@@ -150,6 +163,9 @@ public class LoginPage extends WebPage {
 				HttpServletRequest request = (HttpServletRequest) servletRequest.getContainerRequest();
 				request.getSession(true);
 
+				// Set session user and log the sign-in visit
+				onSigninSuccess(request);
+
 				// Continue original destination OR go home
 				continueToOriginalDestination();
 				setResponsePage(getApplication().getHomePage());
@@ -165,8 +181,8 @@ public class LoginPage extends WebPage {
 		usernameField = new TextField<String>("usernameoremail", new PropertyModel<String>(this, "username"), getLabel("username-email-phone"));
 		passwordField = new PasswordField("password", new PropertyModel<String>(this, "password"), getLabel("password"));
 		usernameField.setTitleCss("row mb-1");
-		usernameField.setCss("text-center text-lg-center text-md-center text-sm-center text-xl-center textl-xxl-center form-control bg-dark text-light");
-		passwordField.setCss("text-center text-lg-center text-md-center text-sm-center text-xl-center textl-xxl-center form-control bg-dark text-light");
+		usernameField.setCss("text-center text-lg-center text-md-center text-sm-center text-xl-center textl-xxl-center form-control ");
+		passwordField.setCss("text-center text-lg-center text-md-center text-sm-center text-xl-center textl-xxl-center form-control ");
 		passwordField.setTitleCss("row mb-1");
 
 		SubmitButton<User> buttons = new SubmitButton<User>("buttons-bottom", getForm()) {
@@ -181,7 +197,7 @@ public class LoginPage extends WebPage {
 			}
 
 			protected String getSaveCss() {
-				return "btn text-light border-light btn-lg";
+				return "btn btn-primary btn-lg";
 			}
 		};
 		form.add(buttons);
@@ -193,6 +209,38 @@ public class LoginPage extends WebPage {
 
 	protected StringResourceModel getLabel(String key) {
 		return new StringResourceModel(key, this);
+	}
+
+	/**
+	 * Called after a successful sign-in: resolves the authenticated {@link User}
+	 * from the database and logs the sign-in visit (once per session).
+	 */
+	private void onSigninSuccess(HttpServletRequest request) {
+		try {
+			UserDBService users = (UserDBService) ServiceLocator.getInstance().getBean(UserDBService.class);
+
+			Optional<User> ouser = users.findByUsernameOrEmailOrPhone(username);
+
+			if (ouser.isEmpty()) {
+				logger.error("User not found after successful login -> " + username);
+				return;
+			}
+
+			User user = ouser.get();
+			logger.debug("session user -> " + user.getUsername());
+
+			// log the sign-in visit (once per session)
+			org.apache.wicket.Session session = getSession();
+			if (!Boolean.TRUE.equals(session.getMetaData(BasePage.SIGNIN_LOGGED))) {
+				String userAgent = request.getHeader("User-Agent");
+				StatDBService stats = (StatDBService) ServiceLocator.getInstance().getBean(StatDBService.class);
+				stats.logSignin(user, session.getId(), userAgent);
+				session.setMetaData(BasePage.SIGNIN_LOGGED, Boolean.TRUE);
+			}
+
+		} catch (Exception e) {
+			logger.error(e);
+		}
 	}
 
 	private boolean isError() {
@@ -211,5 +259,17 @@ public class LoginPage extends WebPage {
 				field.editOn();
 			}
 		});
+	}
+
+	@Override
+	protected void addListeners() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean canAccess(Optional<User> user) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 }

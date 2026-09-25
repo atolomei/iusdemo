@@ -76,6 +76,13 @@ public class TesauroPage extends BasePage {
     protected String getToolbarTitle() {
         return "Buscador Juridico";
     }
+
+
+	@Override
+	protected void addListeners() {
+		// TODO Auto-generated method stub
+		
+	}
     
     
 }

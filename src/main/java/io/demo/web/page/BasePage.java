@@ -43,17 +43,20 @@ import io.demo.model.db.service.StatDBService;
 import io.demo.service.DateTimeService;
 import io.demo.service.LegalSearchService;
 import io.demo.service.QueryHistoryService;
+import io.demo.service.QueryLogService;
 import io.demo.service.ServiceLocator;
+import io.demo.service.Settings;
 import io.demo.service.TesauroService;
 import io.demo.service.UserSettingsService;
 import io.demo.web.panel.MenuEntry;
 import io.demo.web.panel.ObjectModel;
+import io.demo.web.security.ForgotPasswordPage;
+import io.demo.web.security.LoginPage;
 import io.wktui.event.UIEvent;
 import io.wktui.nav.breadcrumb.BreadCrumb;
 import io.wktui.nav.breadcrumb.HREFBCElement;
 import wktui.base.UIEventListener;
 import wktui.bootstrap.Bootstrap;
-
 
 /**
  * Base page with the book layout: fixed dark toolbar, collapsible side menu
@@ -64,19 +67,14 @@ import wktui.bootstrap.Bootstrap;
  */
 public abstract class BasePage extends WebPage {
 
-
 	private static final long serialVersionUID = 1L;
 
-	
 	static private Logger logger = Logger.getLogger(BasePage.class.getName());
 
 	private static final ResourceReference BOOTSTRAP_CSS = Bootstrap.getCssResourceReference();
 	private static final ResourceReference BOOTSTRAP_JS = Bootstrap.getJavaScriptResourceReference();
 
-	
-    
-    private static final ResourceReference CSS = new CssResourceReference(BasePage.class, "./demo.css");
-	
+	private static final ResourceReference CSS = new CssResourceReference(BasePage.class, "./demo.css");
 
 	static private String xfavicon;
 	static private String xlanguage;
@@ -85,19 +83,15 @@ public abstract class BasePage extends WebPage {
 	static private String xkeywords = "demo";
 
 	private static final String XUA_Compatible = "IE=Edge";
-	
-	
 
 	// 1 Day
 	static private final int COOKIE_DURATION = 86400 * 1;
-	
-	
+
 	static {
 		xlanguage = "English";
 		xrobots = "NOINDEX, NOFOLLOW";
 		xrating = "General";
 	}
-
 
 	private String keywords = xkeywords;
 	private String language = xlanguage;
@@ -113,19 +107,46 @@ public abstract class BasePage extends WebPage {
 	private WebMarkupContainer vp;
 	private WebMarkupContainer desc;
 	private WebMarkupContainer lang;
-	private WebMarkupContainer kw;	
+	private WebMarkupContainer kw;
 
-	
 	private boolean visit_logged = false;
-	
+
 	private IModel<User> sessionUserModel;
 
-	
-	protected void addListeners() {
-	}
+	protected abstract void addListeners();
 
-	
-public abstract boolean canAccess(Optional<User> user); 
+	public abstract boolean canAccess(Optional<User> user);
+
+	/**
+	 * Redirects to the sign-in page when there is no authenticated session user,
+	 * preserving the originally requested page (Wicket intercept mechanism, so
+	 * {@code continueToOriginalDestination()} in the LoginPage returns here after a
+	 * successful sign-in). If the user is authenticated but the page's
+	 * {@link #canAccess(Optional)} returns {@code false}, access is denied.
+	 */
+	protected void checkAccess() {
+
+		
+		if (this instanceof LoginPage) {
+			return;
+		}
+		
+		if (this instanceof ForgotPasswordPage) {
+			return;
+		}
+		
+		Optional<User> ouser = getSessionUser();
+
+		if (ouser.isEmpty()) {
+			logger.debug("No session user -> redirecting to sign in page. Requested page -> " + getClass().getSimpleName());
+			throw new org.apache.wicket.RestartResponseAtInterceptPageException(io.demo.web.security.LoginPage.class);
+		}
+
+		if (!canAccess(ouser)) {
+			logger.warn("Access denied -> u." + ouser.get().getUsername() + " page." + getClass().getSimpleName());
+			throw new org.apache.wicket.authorization.UnauthorizedInstantiationException(getClass());
+		}
+	}
 
 	@Override
 	public void onDetach() {
@@ -135,7 +156,7 @@ public abstract boolean canAccess(Optional<User> user);
 			sessionUserModel.detach();
 		}
 	}
-	
+
 	protected void setVisitLogged(boolean b) {
 		this.visit_logged = b;
 	}
@@ -147,19 +168,18 @@ public abstract boolean canAccess(Optional<User> user);
 	public boolean isLogVisit() {
 		return false;
 	}
-	
-	//public Stat getStat() {
-	//	return null;
-	//}
-	
-	
+
+	// public Stat getStat() {
+	// return null;
+	// }
+
 	@Override
 	public void onAfterRender() {
 		super.onAfterRender();
 		if (isLogVisit())
 			logVisit();
 	}
-	
+
 	protected void logVisit() {
 
 		if (isVisitLogged())
@@ -176,14 +196,14 @@ public abstract boolean canAccess(Optional<User> user);
 				// stat.setUserAgent(userAgent);
 			}
 
-			//if (stat == null) {
-			//	logger.error("getStat() returned null for page -> " + getClass().getSimpleName());
-			//	return;
-			//}
+			// if (stat == null) {
+			// logger.error("getStat() returned null for page -> " +
+			// getClass().getSimpleName());
+			// return;
+			// }
 
 			// getLogVisitService().logVisit(stat);
 
-			
 			// Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML,
 			// like Gecko) Chrome/146.0.0.0 Safari/537.36
 			/**
@@ -233,12 +253,12 @@ public abstract boolean canAccess(Optional<User> user);
 
 		}
 	}
-	
-	
-	
+
 	@Override
 	public void onInitialize() {
 		super.onInitialize();
+
+		checkAccess();
 
 		addListeners();
 
@@ -314,24 +334,23 @@ public abstract boolean canAccess(Optional<User> user);
 
 		setPageKeywords(keywords);
 
-		//this.wcss = new WebMarkupContainer("css");
-		//this.wcss.setVisible(false);
-		//add(this.wcss);
+		// this.wcss = new WebMarkupContainer("css");
+		// this.wcss.setVisible(false);
+		// add(this.wcss);
 
 		this.vp = new WebMarkupContainer("viewport");
 		add(vp);
 
 		if (XUA_Compatible != null)
 			setPageXUACompatible(XUA_Compatible);
- 	}
-	
+	}
+
 	public BreadCrumb<Void> createBreadCrumb() {
 		BreadCrumb<Void> bc = new BreadCrumb<>();
 		bc.addElement(new HREFBCElement("/home", getLabel("home")));
 		return bc;
 	}
-	
-	
+
 	@Override
 	public void renderHead(IHeaderResponse response) {
 		super.renderHead(response);
@@ -361,12 +380,10 @@ public abstract boolean canAccess(Optional<User> user);
 		if (getCssResource() != null)
 			response.render(CssHeaderItem.forReference(getCssResource()));
 	}
-  
-	
+
 	public TesauroService getVoiceDBService() {
 		return (TesauroService) ServiceLocator.getInstance().getBean(TesauroService.class);
 	}
-	
 
 	public LegalSearchService getLegalSearchService() {
 		return (LegalSearchService) ServiceLocator.getInstance().getBean(LegalSearchService.class);
@@ -379,13 +396,20 @@ public abstract boolean canAccess(Optional<User> user);
 	public UserSettingsService getUserSettingsService() {
 		return (UserSettingsService) ServiceLocator.getInstance().getBean(UserSettingsService.class);
 	}
-	
 
-	public DateTimeService getDateTimeService() {
-		return (DateTimeService) ServiceLocator.getInstance().getBean( DateTimeService.class);
+
+	public Settings getSettingsService() {
+		return (Settings) ServiceLocator.getInstance().getBean(Settings.class);
+	}
+
+	public QueryLogService getQueryLogService() {
+		return (QueryLogService) ServiceLocator.getInstance().getBean(QueryLogService.class);
 	}
 	
-	
+	public DateTimeService getDateTimeService() {
+		return (DateTimeService) ServiceLocator.getInstance().getBean(DateTimeService.class);
+	}
+
 	protected EmailTemplateService getEmailTemplateService() {
 		return (EmailTemplateService) ServiceLocator.getInstance().getBean(EmailTemplateService.class);
 	}
@@ -393,35 +417,41 @@ public abstract boolean canAccess(Optional<User> user);
 	protected PersistentTokenDBService getPersistentTokenDBServiceDBService() {
 		return (PersistentTokenDBService) ServiceLocator.getInstance().getBean(PersistentTokenDBService.class);
 	}
-	
-	
+
+	public StatDBService getStatDBService() {
+		return (StatDBService) ServiceLocator.getInstance().getBean(StatDBService.class);
+	}
+
+	public QueryDBService getQueryDBService() {
+		return (QueryDBService) ServiceLocator.getInstance().getBean(QueryDBService.class);
+	}
+
+	public QueryFeedbackDBService getQueryFeedbackDBService() {
+		return (QueryFeedbackDBService) ServiceLocator.getInstance().getBean(QueryFeedbackDBService.class);
+	}
+
+	public UserDBService getUserDBService() {
+		return (UserDBService) ServiceLocator.getInstance().getBean(UserDBService.class);
+	}
+
 	public Optional<IModel<User>> getOptionalSessionUserModel() {
-		 
-		
+
 		if (this.getSessionUser().isPresent())
 			return Optional.of(this.getSessionUserModel());
-		 
+
 		return Optional.empty();
 
 	}
-	
-	
+
 	public Optional<User> getSessionUser() {
 
 		if (sessionUserModel != null)
 			return Optional.of(sessionUserModel.getObject());
 
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-		if (auth == null || !auth.isAuthenticated()) {
+		Optional<User> o_user = io.demo.web.WebSessionUser.get();
+
+		if (o_user.isEmpty())
 			return Optional.empty();
-		}
-
-		//if (auth.getName().equals("anonymousUser"))
-		//	return Optional.empty();
-
-
-		UserDBService service = (UserDBService) ServiceLocator.getInstance().getBean(UserDBService.class);
-		Optional<User> o_user = service.findByUsername("root");
 
 		sessionUserModel = new ObjectModel<User>(o_user.get());
 
@@ -429,21 +459,7 @@ public abstract boolean canAccess(Optional<User> user);
 		logSignin(sessionUserModel.getObject());
 
 		return Optional.of(sessionUserModel.getObject());
-
-		
-		/**
-		Optional<User> o_user = service.findByUsername(auth.getName());
-
-		if (o_user == null || o_user.isEmpty())
-			return Optional.empty();
-
-		sessionUserModel = new ObjectModel<User>(o_user.get());
-
-		return Optional.of(sessionUserModel.getObject());
-**/
-		
 	}
-	
 
 	public IModel<User> getSessionUserModel() {
 		if (getSessionUser().isEmpty())
@@ -452,7 +468,7 @@ public abstract boolean canAccess(Optional<User> user);
 	}
 
 	/** Session metadata key used to log the sign-in only once per session. */
-	private static final org.apache.wicket.MetaDataKey<Boolean> SIGNIN_LOGGED = new org.apache.wicket.MetaDataKey<Boolean>() {
+	public static final org.apache.wicket.MetaDataKey<Boolean> SIGNIN_LOGGED = new org.apache.wicket.MetaDataKey<Boolean>() {
 		private static final long serialVersionUID = 1L;
 	};
 
@@ -481,13 +497,6 @@ public abstract boolean canAccess(Optional<User> user);
 		}
 	}
 
-	public StatDBService getStatDBService() {
-		return (StatDBService) ServiceLocator.getInstance().getBean(StatDBService.class);
-	}
-
-		
-	
-	
 	protected void setPageFonts(String s) {
 		fonts = s;
 	}
@@ -535,8 +544,7 @@ public abstract boolean canAccess(Optional<User> user);
 	protected String getPageKeywords() {
 		return keywords;
 	}
-	
-	
+
 	protected void setCss(ResourceReference rcss) {
 		this.rcss = rcss;
 	}
@@ -544,9 +552,7 @@ public abstract boolean canAccess(Optional<User> user);
 	protected ResourceReference getCssResource() {
 		return rcss;
 	}
-	
-	
-	
+
 	protected StringResourceModel getLabel(String key) {
 		return new StringResourceModel(key, this);
 	}
@@ -556,39 +562,38 @@ public abstract boolean canAccess(Optional<User> user);
 		model.setParameters((Object[]) parameter);
 		return model;
 	}
- 
-    protected BasePage(PageParameters parameters) {
-        super(parameters);
-    }
 
-    /** Title shown at the left of the toolbar (e.g. the book title). */
-    protected String getToolbarTitle() {
-        return "Demo";
-    }
+	protected BasePage(PageParameters parameters) {
+		super(parameters);
+	}
 
-    /** Subtitle shown below the toolbar title (e.g. the authors). */
-    protected String getToolbarSubtitle() {
-        return "";
-    }
+	/** Title shown at the left of the toolbar (e.g. the book title). */
+	protected String getToolbarTitle() {
+		return "Demo";
+	}
 
-    /** Text shown at the right of the toolbar (e.g. the chapter). */
-    protected String getToolbarRight() {
-        return "";
-    }
+	/** Subtitle shown below the toolbar title (e.g. the authors). */
+	protected String getToolbarSubtitle() {
+		return "";
+	}
 
-    /** Entries of the side menu. Subclasses may override. */
-    protected List<MenuEntry> getMenuEntries() {
-        List<MenuEntry> entries = new ArrayList<>();
-        entries.add(MenuEntry.link("Home", "/home", true));
-        entries.add(MenuEntry.link("Tesauro", "/tesauro", false));
-        entries.add(MenuEntry.link("Comunidad", "/comunidad", false));
-        entries.add(MenuEntry.link("Usuarios", "/users", false));
-        entries.add(MenuEntry.link("Preferencias", "/usersettings", false));
-        return entries;
-    }
-    
-    
-    public String getServerUrl() {
+	/** Text shown at the right of the toolbar (e.g. the chapter). */
+	protected String getToolbarRight() {
+		return "";
+	}
+
+	/** Entries of the side menu. Subclasses may override. */
+	protected List<MenuEntry> getMenuEntries() {
+		List<MenuEntry> entries = new ArrayList<>();
+		entries.add(MenuEntry.link("Home", "/home", true));
+		entries.add(MenuEntry.link("Tesauro", "/tesauro", false));
+		entries.add(MenuEntry.link("Comunidad", "/comunidad", false));
+		entries.add(MenuEntry.link("Usuarios", "/users", false));
+		entries.add(MenuEntry.link("Preferencias", "/usersettings", false));
+		return entries;
+	}
+
+	public String getServerUrl() {
 		String protocol = ((WebRequest) RequestCycle.get().getRequest()).getUrl().getProtocol();
 		String host = ((WebRequest) RequestCycle.get().getRequest()).getUrl().getHost();
 		Integer iport = ((WebRequest) RequestCycle.get().getRequest()).getUrl().getPort();
@@ -596,10 +601,7 @@ public abstract boolean canAccess(Optional<User> user);
 		return protocol + "://" + host + port;
 	}
 
-	 
-    
-    
-    @SuppressWarnings("unchecked")
+	@SuppressWarnings("unchecked")
 	public void fireScanAll(UIEvent event) {
 		for (UIEventListener<UIEvent> listener : getBehaviors(UIEventListener.class)) {
 			if (listener.handle(event)) {
@@ -651,21 +653,5 @@ public abstract boolean canAccess(Optional<User> user);
 		}
 		return handled;
 	}
-	
-	
-    
-	public QueryDBService getQueryDBService() {
-		return (QueryDBService) ServiceLocator.getInstance().getBean(QueryDBService.class);
-	}
-	
-	public QueryFeedbackDBService getQueryFeedbackDBService() {
-		return (QueryFeedbackDBService) ServiceLocator.getInstance().getBean(QueryFeedbackDBService.class);
-	}
 
-
-	public UserDBService getUserDBService() {
-		return (UserDBService) ServiceLocator.getInstance().getBean(UserDBService.class);
-	}
-    
-    
 }

@@ -30,11 +30,19 @@ public class DocumentAnalyze extends DemoDBObject {
 
 	@ManyToOne(fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.DETACH, targetEntity = Query.class)
 	@Fetch(FetchMode.SELECT)
-	@JoinColumn(name = "query_id", nullable = false)
+	@JoinColumn(name = "query_id", nullable = true)
 	@JsonManagedReference
 	@JsonBackReference
 	@JsonProperty("query")
 	private Query query;
+
+	/** Id of the document (segment) in the RAG index. */
+	@Column(name = "rag_document_id")
+	private String ragDocumentId;
+
+	/** The question asked about the document. */
+	@Column(name = "question")
+	private String question;
 
 	@Column(name = "results")
 	private String results;

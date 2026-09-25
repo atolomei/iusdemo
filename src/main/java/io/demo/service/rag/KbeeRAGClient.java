@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import io.demo.Logger;
 import io.demo.model.DemoObjectMapper;
+import io.demo.model.Query;
 import io.demo.service.Settings;
 import tools.jackson.databind.ObjectMapper;
 
@@ -44,6 +45,8 @@ public class KbeeRAGClient {
 
     private static final String DOCUMENT_ANALYSIS_ENDPOINT = "/api/rag/document-analysis";
 
+    private static final String QUERY_ANALYSIS_ENDPOINT = "/api/rag/queryanalysis";
+
     private final Settings settings;
 
     private final HttpClient httpClient;
@@ -53,7 +56,7 @@ public class KbeeRAGClient {
     public KbeeRAGClient(Settings settings) {
         this.settings = settings;
         this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
+                .connectTimeout(Duration.ofSeconds(15))
                 .build();
         this.mapper = new DemoObjectMapper();
         //this.mapper.registerModule(new JavaTimeModule());
@@ -74,32 +77,69 @@ public class KbeeRAGClient {
      * @return the parsed {@link RagResponse}
      */
     public RagResponse executeQuery(String question) {
+        return executeQuery(question, null);
+    }
+
+    /**
+     * Same as {@link #executeQuery(String)}, but allows passing optional
+     * filter parameters (e.g. {@code fromDate}, {@code toDate}) that are
+     * forwarded to the server in the {@link RagRequest}.
+     */
+    public RagResponse executeQuery(String question, java.util.Map<String, String> parameters) {
+        return executeQuery(question, parameters, 0);
+    }
+
+    /**
+     * Same as {@link #executeQuery(String, java.util.Map)}, but allows requesting a
+     * specific number of results (topK). When {@code topK <= 0} the default from
+     * {@link io.demo.service.Settings#getRagTopK()} is used.
+     */
+    public RagResponse executeQuery(String question, java.util.Map<String, String> parameters, int topK) {
+        return executeQuery(question, parameters, topK, null);
+    }
+
+    /**
+     * Same as {@link #executeQuery(String, java.util.Map, int)}, but also passes the
+     * {@link io.demo.results.ReasoningEffortOption} (both topK and key) to the RAG server.
+     * When {@code reasoningEffort} is null the server defaults to "low".
+     */
+    public RagResponse executeQuery(String question, java.util.Map<String, String> parameters, int topK,
+            io.demo.results.ReasoningEffortOption reasoningEffort) {
 
         try {
         	
-        	int rerankTopK= settings.getRagTopK();
+        	int rerankTopK = (topK > 0) ? topK : ((reasoningEffort != null) ? reasoningEffort.getTopK() : settings.getRagTopK());
         	if (question.trim().toLowerCase().contains("suprema")) {
-            	rerankTopK = 30;
+            	rerankTopK = Math.max(rerankTopK, 40);
             }
         	
-        	
-            String requestBody = mapper.writeValueAsString(new RagRequestPayload(question, rerankTopK));
+        	String reasoningEffortKey = (reasoningEffort != null) ? reasoningEffort.getKey() : null;
+
+            String requestBody = mapper.writeValueAsString(new RagRequest(question, parameters, rerankTopK, settings.getRagLlm(), reasoningEffortKey));
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(getAnswerUrl()))
-                    .timeout(Duration.ofMinutes(2))
+                    .timeout(Duration.ofMinutes( settings.getSearchTimeOutMinutes()))
                     .header("Content-Type", "application/json")
+                    .header("Authorization", basicAuth())
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
                     .build();
-long startTime = System.currentTimeMillis();
+
+          
+            logger.debug("Sending request to Kbee RAG Server -> " + requestBody.toString());
+            
+            long startTime = System.currentTimeMillis();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
-            logger.debug("Round-trip time to Kbee RAG Server: " + (System.currentTimeMillis() - startTime) + " ms");
+            logger.debug("Round-trip time to Kbee RAG Server -> " + (System.currentTimeMillis() - startTime) + " ms");
             
-            if (response.statusCode() != 200)
-                throw new RuntimeException("Kbee RAG Server returned HTTP " + response.statusCode() + " | " + getAnswerUrl());
-
+            if (response.statusCode() != 200) {
+            
+            	logger.error("Kbee RAG Server returned HTTP " + response.statusCode() + " | " + getAnswerUrl() + " | response body: " + response.body());
+            	throw new RuntimeException("Kbee RAG Server returned HTTP " + response.statusCode() + " | " + getAnswerUrl() + "  <br/> response body: " + response.body());
+            }
+            
             logger.debug("Kbee RAG Server response: " + response.body());
             
             RagResponse ragResponse = mapper.readValue(response.body(), RagResponse.class);
@@ -128,15 +168,16 @@ long startTime = System.currentTimeMillis();
      * @param query         the question to answer about the document
      * @return the parsed {@link DocumentAnalysisResponse}
      */
-    public DocumentAnalysisResponse analyzeDocument(String ragDocumentId, String query) {
+    public DocumentAnalysisResponse analyzeDocument(String ragDocumentId, Query query) {
 
         try {
-            String requestBody = mapper.writeValueAsString(new DocumentAnalysisRequestPayload(ragDocumentId, query));
+            String requestBody = mapper.writeValueAsString(new DocumentAnalysisRequestPayload(ragDocumentId, query.getQuery(), settings.getRagLlm()));
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(getDocumentAnalysisUrl()))
-                    .timeout(Duration.ofMinutes(2))
+                    .timeout(Duration.ofMinutes( settings.getSearchTimeOutMinutes()))
                     .header("Content-Type", "application/json")
+                    .header("Authorization", basicAuth())
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
                     .build();
 
@@ -154,6 +195,7 @@ long startTime = System.currentTimeMillis();
             return mapper.readValue(response.body(), DocumentAnalysisResponse.class);
 
         } catch (RuntimeException e) {
+        	logger.error(e);
             throw e;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -161,6 +203,71 @@ long startTime = System.currentTimeMillis();
         } catch (Exception e) {
             logger.error(e);
             throw new RuntimeException("Error calling Kbee RAG Server | " + getDocumentAnalysisUrl(), e);
+        }
+    }
+
+    /**
+     * Calls the Kbee RAG Server {@code /api/rag/queryanalysis} endpoint and
+     * parses the JSON response into a {@link QueryAnalysis} record.
+     *
+     * @param serverQueryId the server's id of the query
+     * @param llm           the llm to use for the analysis
+     * @return the parsed {@link QueryAnalysis}
+     */
+    public QueryAnalysis queryAnalysis(String serverQueryId, String llm) {
+
+        try {
+            String requestBody = mapper.writeValueAsString(new QueryAnalysisRequestPayload(serverQueryId, llm));
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(getQueryAnalysisUrl()))
+                    .timeout(Duration.ofMinutes(settings.getSearchTimeOutMinutes()))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", basicAuth())
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
+                    .build();
+
+            long startTime = System.currentTimeMillis();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+
+            logger.debug("Round-trip time to Kbee RAG Server (queryanalysis): " + (System.currentTimeMillis() - startTime) + " ms");
+
+            if (response.statusCode() != 200)
+                throw new RuntimeException("Kbee RAG Server returned HTTP " + response.statusCode() + " | " + getQueryAnalysisUrl());
+
+            logger.debug("Kbee RAG Server response: " + response.body());
+
+            return mapper.readValue(response.body(), QueryAnalysis.class);
+
+        } catch (RuntimeException e) {
+            logger.error(e);
+            throw e;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while calling Kbee RAG Server | " + getQueryAnalysisUrl(), e);
+        } catch (Exception e) {
+            logger.error(e);
+            throw new RuntimeException("Error calling Kbee RAG Server | " + getQueryAnalysisUrl(), e);
+        }
+    }
+
+    /**
+     * Returns {@code true} if the Kbee RAG Server can be reached (a TCP
+     * connection to its host/port succeeds within a short timeout).
+     */
+    public boolean isAvailable() {
+        try {
+            URI uri = URI.create(settings.getRagServerUrl() + ":" + settings.getRagServerPort());
+            String host = uri.getHost() != null ? uri.getHost() : settings.getRagServerUrl();
+            int port = uri.getPort() > 0 ? uri.getPort() : settings.getRagServerPort();
+            try (java.net.Socket socket = new java.net.Socket()) {
+                socket.connect(new java.net.InetSocketAddress(host, port), 1500);
+                return true;
+            }
+        } catch (Exception e) {
+            logger.debug("Kbee RAG Server not reachable -> " + e.getClass().getSimpleName() + " | " + e.getMessage());
+            return false;
         }
     }
 
@@ -180,8 +287,18 @@ long startTime = System.currentTimeMillis();
         return settings.getRagServerUrl() + ":" + settings.getRagServerPort() + ANSWER_ENDPOINT;
     }
 
+    /** HTTP Basic Authorization header value from settings (kbee.rag.user / kbee.rag.password). */
+    private String basicAuth() {
+        String credentials = settings.getRagUser() + ":" + settings.getRagPassword();
+        return "Basic " + java.util.Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+    }
+
     private String getDocumentAnalysisUrl() {
         return settings.getRagServerUrl() + ":" + settings.getRagServerPort() + DOCUMENT_ANALYSIS_ENDPOINT;
+    }
+
+    private String getQueryAnalysisUrl() {
+        return settings.getRagServerUrl() + ":" + settings.getRagServerPort() + QUERY_ANALYSIS_ENDPOINT;
     }
 
     
@@ -237,11 +354,11 @@ long startTime = System.currentTimeMillis();
         return sb.toString();
     }
 
-    /** Payload matching the server side {@code RagRequest} record. */
-    private record RagRequestPayload(String question, int topK) {
+    /** Payload matching the server side {@code DocumentAnalysisRequest} record. */
+    private record DocumentAnalysisRequestPayload(String documentId, String question, String llm) {
     }
 
-    /** Payload matching the server side {@code DocumentAnalysisRequest} record. */
-    private record DocumentAnalysisRequestPayload(String documentId, String question) {
+    /** Payload matching the server side {@code QueryAnalysisRequest} record. */
+    private record QueryAnalysisRequestPayload(String queryId, String llm) {
     }
 }

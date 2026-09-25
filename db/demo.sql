@@ -115,7 +115,7 @@ CREATE TABLE  QueryFeedback  (
 
 CREATE TABLE  DocumentAnalyze (
  id bigint              primary key default nextval('sequence_id'),
- query_id	            bigint references query(id) not null, 
+ query_id	            bigint references query(id) not null on delete cascade, 
  results 				text,
  session_id             character varying(255) not null,
  durationMillisecs	    bigint default 0,

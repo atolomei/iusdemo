@@ -84,4 +84,10 @@ public class UserSettingsPage extends DemoBasePage {
 		}
 	}
 
+	@Override
+	protected void addListeners() {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

@@ -11,7 +11,7 @@ import org.apache.wicket.model.Model;
 import org.apache.wicket.request.Url;
 import org.apache.wicket.request.resource.UrlResourceReference;
 
-import io.demo.model.Documento;
+import io.demo.model.RAGDocumento;
 import io.wktui.event.UIEvent;
 import io.wktui.panel.ListItemPanel;
 import io.wktui.struct.list.ListPanel;
@@ -20,7 +20,7 @@ import io.wktui.struct.list.ListPanelWicketEvent;
 import wktui.base.InvisiblePanel;
 import wktui.base.ModelPanel;
 
-public abstract class DemoObjectListItemPanel<T extends Documento>  extends ModelPanel<T>  implements ListItemPanel<T> {
+public abstract class DemoObjectListItemPanel<T extends RAGDocumento>  extends ModelPanel<T>  implements ListItemPanel<T> {
 
 	private static final long serialVersionUID = 1L;
 

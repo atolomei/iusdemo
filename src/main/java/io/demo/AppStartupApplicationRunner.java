@@ -140,15 +140,60 @@ public class AppStartupApplicationRunner implements ApplicationRunner {
 
 		// migrate legacy raw-bcrypt hashes (no {bcrypt} prefix) so the
 		// delegating PasswordEncoder can validate them
-		User root = oRoot.get();
-		String p = root.getPassword();
-		if (p != null && p.startsWith("$2") && !p.startsWith("{")) {
-			root.setPassword("{bcrypt}" + p);
-			users.save(root);
-			startupLogger.info("root password hash migrated to {bcrypt} format");
+		for (User u : users.findAll()) {
+			String p = u.getPassword();
+			if (p != null && p.startsWith("$2") && !p.startsWith("{")) {
+				u.setPassword("{bcrypt}" + p);
+				users.save(u);
+				startupLogger.info("password hash of user '" + u.getName() + "' migrated to {bcrypt} format");
+			}
 		}
 	}
 	
+ 
+ /**
+	
+	  @Bean CommandLineRunner loghistory() {
+		  
+	        return args -> {
+	  
+	        try {
+	  
+	         
+	        	UserDBService users = ((UserDBService) ServiceLocator.getInstance().getBean(UserDBService.class));
+	         
+	        	LegalSearchService l = ((LegalSearchService) ServiceLocator.getInstance().getBean(LegalSearchService.class));
+
+	        	QueryLogService ql = ((QueryLogService) ServiceLocator.getInstance().getBean(QueryLogService.class));
+	        	
+	        	KbeeRAGClient k = ((KbeeRAGClient) ServiceLocator.getInstance().getBean(KbeeRAGClient.class));
+	    
+	        	final User root = users.findByUsername("root").orElseThrow(() -> new Exception("Root user not found"));
+							
+				
+	        	k.getResponseHistory().forEach( rg -> {
+	        			// skip entries already logged (avoid duplicates on restart)
+	        			if (ql.getQueryDBService().getMostRecentByText(rg.question()) != null) {
+	        				logger.debug("question already logged, skipping: " + rg.question());
+	        				return;
+	        			}
+	        			// results must be the RagResponse serialized as JSON,
+	        			// so QueryLogService can deserialize it as a cache entry
+	        			ql.log(rg.question(), l.toJson(rg), rg.elapsedMilliseconds(), root, "na" );
+	        			logger.debug("logged question: " + rg.question());
+	          	});
+	        	
+	          	logger.debug("done");
+	  
+	        } catch (Exception e) { logger.error(e); } }; 
+	       
+	  
+	  }
+	 */
+	
+	 
+	  
+	  
 	
 	/**
 	 * 

@@ -15,6 +15,7 @@ import org.apache.wicket.model.PropertyModel;
 import io.demo.model.User;
 import io.demo.web.event.DateRangeEvent;
 import io.demo.web.event.OrderOptionEvent;
+import io.demo.web.event.QueryAnalysisEvent;
 import io.demo.web.event.SubjectOptionEvent;
 import io.demo.web.event.TotalOptionEvent;
 import wktui.base.ModelPanel;
@@ -38,6 +39,7 @@ public class ToolbarResults extends ModelPanel<User> {
 	private DateRange dateRange = DateRange.getDefault();
 	private SubjectOption subjectOption = SubjectOption.getDefault();
 	private TotalOption totalOption = TotalOption.getDefault();
+	private ReasoningEffortOption reasoningEffortOption = ReasoningEffortOption.getDefault();
 
 	/** total number of results displayed on the right of the toolbar */
 	private Integer total;
@@ -82,6 +84,14 @@ public class ToolbarResults extends ModelPanel<User> {
 		return this.totalOption;
 	}
 
+	public void setReasoningEffortOption(ReasoningEffortOption option) {
+		this.reasoningEffortOption = option;
+	}
+
+	public ReasoningEffortOption getReasoningEffortOption() {
+		return this.reasoningEffortOption;
+	}
+
 	// --- total --------------------------------------------------------
 
 	public void setTotal(Integer total) {
@@ -118,53 +128,82 @@ public class ToolbarResults extends ModelPanel<User> {
 		});
 		container.add(order);
 
-		// date range selector
+		// date range selector (read-only: value comes from the SearchForm)
 		DropDownChoice<DateRange> dates = new DropDownChoice<DateRange>("daterange",
 				new PropertyModel<DateRange>(this, "dateRange"),
 				Arrays.asList(DateRange.values()),
-				new ChoiceRenderer<DateRange>("label"));
-
-		dates.add(new AjaxFormComponentUpdatingBehavior("change") {
+				new ChoiceRenderer<DateRange>("label")) {
 			private static final long serialVersionUID = 1L;
 
 			@Override
-			protected void onUpdate(AjaxRequestTarget target) {
-				fireScanAll(new DateRangeEvent(getDateRange(), target));
+			public boolean isEnabled() {
+				return false;
 			}
-		});
+		};
 		container.add(dates);
 
-		// subject selector
+		// subject selector (read-only: value comes from the SearchForm)
 		DropDownChoice<SubjectOption> subject = new DropDownChoice<SubjectOption>("subject",
 				new PropertyModel<SubjectOption>(this, "subjectOption"),
 				Arrays.asList(SubjectOption.values()),
-				new ChoiceRenderer<SubjectOption>("label"));
-
-		subject.add(new AjaxFormComponentUpdatingBehavior("change") {
+				new ChoiceRenderer<SubjectOption>("label")) {
 			private static final long serialVersionUID = 1L;
 
 			@Override
-			protected void onUpdate(AjaxRequestTarget target) {
-				fireScanAll(new SubjectOptionEvent(getSubjectOption(), target));
+			public boolean isEnabled() {
+				return false;
 			}
-		});
+		};
 		container.add(subject);
 
-		// max results selector
+		// reasoning level selector (read-only: value comes from the SearchForm)
+		DropDownChoice<ReasoningEffortOption> reasoning = new DropDownChoice<ReasoningEffortOption>("reasoninglevel",
+				new PropertyModel<ReasoningEffortOption>(this, "reasoningEffortOption"),
+				Arrays.asList(ReasoningEffortOption.values()),
+				new ChoiceRenderer<ReasoningEffortOption>("label")) {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public boolean isEnabled() {
+				return false;
+			}
+		};
+		container.add(reasoning);
+
+		// "Análisis" button: fires the QueryAnalysisEvent so the ResultsPanel
+		// displays the general analysis of the query
+		container.add(new org.apache.wicket.ajax.markup.html.AjaxLink<Void>("analysis") {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void onClick(AjaxRequestTarget target) {
+				fireScanAll(new QueryAnalysisEvent(target));
+			}
+		});
+/**
+		// max results selector (read-only: value comes from the SearchForm)
 		DropDownChoice<TotalOption> max = new DropDownChoice<TotalOption>("maxresults",
 				new PropertyModel<TotalOption>(this, "totalOption"),
 				Arrays.asList(TotalOption.values()),
-				new ChoiceRenderer<TotalOption>("label"));
-
-		max.add(new AjaxFormComponentUpdatingBehavior("change") {
+				new ChoiceRenderer<TotalOption>("label")) {
 			private static final long serialVersionUID = 1L;
 
 			@Override
-			protected void onUpdate(AjaxRequestTarget target) {
-				fireScanAll(new TotalOptionEvent(getTotalOption(), target));
+			public boolean isEnabled() {
+				return false;
 			}
-		});
+
+			@Override
+			public boolean isVisible() {
+				return false;
+			}
+
+			
+		};
 		container.add(max);
+		*
+		*/
+		
 
 		// total number of results (like ListPanelToolbar)
 		this.totalLabel = new Label("total", new Model<String>() {

@@ -5,9 +5,15 @@ import java.time.OffsetDateTime;
 /**
  * Mirror of {@code com.kbee.solr.search.VectorSearchResult} from the Kbee RAG
  * Server prototype.
+ *
+ * @deprecated No longer used since the new REST API version; the
+ *             {@code /api/rag/answer} endpoint now returns {@link Source}
+ *             instances instead. Scheduled for removal.
  */
+@Deprecated(forRemoval = true)
 public record VectorSearchResult(
-        String id,
+
+		String id,
         String documentId,
         String documentTitle,
         OffsetDateTime documentDate,
@@ -17,5 +23,9 @@ public record VectorSearchResult(
         Integer segmentNumber,
         Integer sectionSegmentNumber,
         String text,
-        Float score) {
+        Float score) 
+
+{
+	
+	
 }

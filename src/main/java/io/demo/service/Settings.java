@@ -151,8 +151,14 @@ public class Settings {
 	@Value("${kbee.rag.port:8081}")
 	protected int ragServerPort;
 
-	@Value("${kbee.rag.topk:15}")
+	@Value("${kbee.rag.topk:20}")
 	protected int ragTopK;
+
+	@Value("${kbee.rag.user:admin}")
+	protected String ragUser;
+
+	@Value("${kbee.rag.password:kbeerag}")
+	protected String ragPassword;
 
 	/** CACHE DIRECTORIES ---------------------------------------------------- */
 
@@ -167,6 +173,23 @@ public class Settings {
 	/** Directory containing the test queries JSON files. */
 	@Value("${testqueries.dir:work/testqueries}")
 	protected String testQueriesDir;
+
+	/** REGRESSION TEST ------------------------------------------------------ */
+
+	/** When {@code true} the regression test is executed on startup and the JVM exits when done. */
+	@Value("${regressiontest.enabled:false}")
+	protected String regressionTestEnabledStr;
+
+	/** Directory where the regression test results (CSV) are written. */
+	@Value("${regressiontest.dir:text}")
+	protected String regressionTestDir;
+
+	/**
+	 * Comma-separated list of reasoning effort keys to test (low, medium,
+	 * high, xhigh). Empty -> all options.
+	 */
+	@Value("${regressiontest.efforts:}")
+	protected String regressionTestEfforts;
 
 	/** DATABASE -------------------------------------------------------------- */
 
@@ -196,6 +219,38 @@ public class Settings {
 	@Value("${help.dir:help}")
 	protected String helpDir;
 
+	
+	@Value("${cache.queries.enabled:true}")
+	protected String useCacheQueriesStr;
+
+	@Value("${cache.document.analyze.enabled:true}")
+	protected String useCacheDocumentAnalyzeStr;
+
+	
+	
+	@Value("${llm:openrouter}")
+	protected String llm;
+
+	
+	public String getRagLlm() {
+		return llm;
+	}
+	
+	
+	public boolean isUseCacheDocumentAnalyzeQueries() {
+		return useCacheDocumentAnalyzeStr!=null && useCacheDocumentAnalyzeStr.equalsIgnoreCase("true");	
+	}
+
+	
+	public boolean isUseCacheQueries() {
+		return useCacheQueriesStr!=null && useCacheQueriesStr.equalsIgnoreCase("true");	
+	}
+	
+	
+	
+	
+	
+	
 	public String getHelpDir() {
 		return helpDir;
 	}
@@ -349,6 +404,14 @@ public class Settings {
 		return ragTopK;
 	}
 
+	public String getRagUser() {
+		return ragUser;
+	}
+
+	public String getRagPassword() {
+		return ragPassword;
+	}
+
 	public String getDatabaseUrl() {
 		return databaseUrl;
 	}
@@ -403,7 +466,8 @@ public class Settings {
 				bookHtmlDir,
 				queryCacheDir,
 				documentAnalyzeCacheDir,
-				testQueriesDir
+				testQueriesDir,
+				regressionTestDir
 		}) {
 			try {
 				File dir = new File(path);
@@ -443,6 +507,21 @@ public class Settings {
 		return testQueriesDir;
 	}
 
+	/** whether the regression test runs on startup */
+	public boolean isRegressionTestEnabled() {
+		return regressionTestEnabledStr != null && regressionTestEnabledStr.equalsIgnoreCase("true");
+	}
+
+	/** Directory where the regression test results are written ("text"). */
+	public String getRegressionTestDir() {
+		return regressionTestDir;
+	}
+
+	/** Comma-separated reasoning effort keys to test. Empty -> all. */
+	public String getRegressionTestEfforts() {
+		return regressionTestEfforts;
+	}
+
 
 
 
@@ -474,4 +553,20 @@ public class Settings {
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+	public String getBasePJSFUrl() {
+		return  "https://portal.justiciasantafe.gov.ar/bdj/index.php?pg=bus&m=busqueda&c=busqueda&a=get&id=";
+	}
+
+
+	public long getSearchTimeOutMinutes() {
+		return 5;
+	}
+
+
+
+
+
+
+
 }

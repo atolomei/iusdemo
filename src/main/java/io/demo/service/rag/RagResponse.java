@@ -3,14 +3,12 @@ package io.demo.service.rag;
 import java.util.List;
 
 /**
- * Mirror of {@code com.kbee.solr.search.RagResponse} from the Kbee RAG Server
- * prototype.
+ * Mirror of {@code kbee.rag.search.RagResponse} from the Kbee RAG Server
+ * ({@code /api/rag/answer}).
  */
 public record RagResponse(
+        String queryId,
         String question,
         String answer,
-        int topK,
-        long searchElapsedMilliseconds,
-        long elapsedMilliseconds,
-        List<VectorSearchResult> sources) {
+        List<Source> sources) {
 }

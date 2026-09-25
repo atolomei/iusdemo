@@ -6,7 +6,6 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.CrudRepository;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -294,4 +293,17 @@ public class UserDBService extends DBService<User, Long> {
 	}
 
 
+
+	public boolean isAdmin(User u) {
+		return u.getRole()==Role.ADMIN;
+		
+	}
+
+	public boolean isGeneralUser(User u) {
+		return u.getRole()==Role.REGULAR_USER;
+		
+	}
+
+	
+	
 }

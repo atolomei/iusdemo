@@ -103,7 +103,13 @@ public class UsersPage extends DemoBasePage {
 			public IModel<String> getItemLabel(IModel<User> model) {
 				return Model.of(model.getObject().getDisplayname() + " " + (model.getObject().getName() != null ? model.getObject().getName() : ""));
 			}
+
+			@Override
+			protected WebMarkupContainer getListItemExpandedPanel(IModel<User> model, io.wktui.struct.list.ListPanelMode mode) {
+				return new UserExpandedPanel("expanded-panel", model);
+			}
 		};
+		listPanel.setHasExpander(true);
 		add(listPanel);
 	}
 
@@ -279,5 +285,11 @@ public class UsersPage extends DemoBasePage {
 
 	public UserDBService getUserDBService() {
 		return (UserDBService) ServiceLocator.getInstance().getBean(UserDBService.class);
+	}
+
+	@Override
+	protected void addListeners() {
+		// TODO Auto-generated method stub
+		
 	}
 }

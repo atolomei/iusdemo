@@ -36,7 +36,7 @@ public abstract class DemoBasePage extends BasePage {
 		
 		try {
 		
-			globalTopPanel = new GlobalTopPanel("top-panel", null);
+			globalTopPanel = new GlobalTopPanel("top-panel", getSessionUserModel());
 			add(globalTopPanel);
 
 		} catch (Exception e) {

@@ -30,7 +30,13 @@ public enum DateRange {
 
 	/** default selection for the selector */
 	public static DateRange getDefault() {
-		return ALL;
+		return LAST_5_YEARS;
+	}
+
+	/** Returns the DateRange with the given ordinal, or the default if out of range. */
+	public static DateRange fromOrdinal(int ordinal) {
+		DateRange[] values = values();
+		return (ordinal >= 0 && ordinal < values.length) ? values[ordinal] : getDefault();
 	}
 
 	/**

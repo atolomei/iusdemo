@@ -48,7 +48,7 @@ public class App {
 		// for (String s : DellemuseServerAppVersion.getAppCharacterName())
 		// std_logger.info(s);
 
-		for (String s : BannerUtil.generateBanner("KBEE-IUS"))
+		for (String s : BannerUtil.generateBanner("IUS"))
 			std_logger.info(s);
 
 		std_logger.info("");

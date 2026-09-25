@@ -27,13 +27,16 @@ import io.demo.model.Stat;
 import io.demo.model.User;
 import io.demo.model.db.service.QueryDBService;
 import io.demo.service.ServiceLocator;
+import io.demo.web.home.DemoHomePage;
 import io.demo.web.page.BasePage;
 import io.demo.web.page.DemoBasePage;
+import io.demo.web.panel.ObjectModel;
 import io.demo.web.panel.PageHeaderPanel;
 import io.demo.web.panel.SimpleHeaderPanel;
 import io.wktui.error.ErrorPanel;
 import io.wktui.nav.breadcrumb.BreadCrumb;
 import io.wktui.struct.list.ListPanel;
+import io.wktui.struct.list.ListPanelMode;
 
 /**
  * Report of the 1000 most recent user queries.
@@ -49,7 +52,7 @@ public class ReportQueriesPage extends DemoBasePage {
 
 	private static final int MAX_QUERIES = 10000;
 
-	private List<QueryRow> rows;
+	private List<IModel<Query>> queries;
 	
 	private DateRange selectedRange = DateRange.LAST_7_DAYS;
 
@@ -75,7 +78,7 @@ public class ReportQueriesPage extends DemoBasePage {
 			return false;
 		
 	
-		return role== Role.SYSADMIN || role== Role.ADMIN;
+		return true;
 		
 		
 	} 
@@ -114,32 +117,36 @@ public class ReportQueriesPage extends DemoBasePage {
 
 			@Override
 			protected void onUpdate(AjaxRequestTarget target) {
-				// buildSigninList();
+				loadRows();
 				target.add(signinContainer);
 			}
 		});
 		add(rangeSelector);
 		
 
-		ListPanel<QueryRow> queryListPanel = new ListPanel<QueryRow>("queryList") {
+		ListPanel<Query> queryListPanel = new ListPanel<Query>("queryList") {
 			private static final long serialVersionUID = 1L;
 
 			@Override
-			public IModel<String> getItemLabel(IModel<QueryRow> model) {
-				QueryRow row = model.getObject();
-				return Model.of(row.getQuery() );
-				
-				/**return Model.of("<span class=\"float-start\">" + row.getQuery() + "</span>"
-						+ "<span class=\"float-end\">" + row.getTimestamp() + " &middot; " + row.getDurationMillisecs() + " ms</span>");
-			**/
+			public IModel<String> getItemLabel(IModel<Query> model) {
+				return Model.of(model.getObject().getQuery());
 			}
 
 			@Override
-			public List<IModel<QueryRow>> getItems() {
-				List<IModel<QueryRow>> models = new ArrayList<>();
-				for (QueryRow row : rows)
-					models.add(Model.of(row));
-				return models;
+			public List<IModel<Query>> getItems() {
+				return queries;
+			}
+
+			@Override
+			protected void onClick(IModel<Query> model) {
+				PageParameters parameters = new PageParameters();
+				parameters.add("query", model.getObject().getQuery());
+				setResponsePage(new DemoHomePage(parameters));
+			}
+
+			@Override
+			protected WebMarkupContainer getListItemExpandedPanel(IModel<Query> model, ListPanelMode mode) {
+				return new QueryReportExpandedPanel("expanded-panel", model);
 			}
 		};
 		queryListPanel.setHasExpander(true);
@@ -225,13 +232,21 @@ public class ReportQueriesPage extends DemoBasePage {
 	
 
 	private void loadRows() {
-		rows = new ArrayList<>();
+		this.queries = new ArrayList<IModel<Query>>();
 		try {
+			
+
 			ZoneId zoneId = getZoneId();
-			for (Query q : getQueryDBService().getRecent(MAX_QUERIES)) {
-				String ts = q.getCreated() != null ? df.format(q.getCreated().atZoneSameInstant(zoneId)) : "";
-				rows.add(new QueryRow(q.getQuery(), ts, q.getDurationMillisecs()));
-			}
+			
+			OffsetDateTime from = selectedRange.getFrom(zoneId);
+			OffsetDateTime to = selectedRange.getTo(zoneId);
+
+			List<Query> list = getQueryDBService().getRecent(MAX_QUERIES, from, to);
+
+			
+			
+			for (Query q : list)
+				queries.add(new ObjectModel<Query>(q));
 		} catch (Exception e) {
 			logger.error(e);
 		}
@@ -256,28 +271,17 @@ public class ReportQueriesPage extends DemoBasePage {
 		return "Buscador Juridico";
 	}
 
-	private static class QueryRow implements java.io.Serializable {
-		private static final long serialVersionUID = 1L;
-		private final String query;
-		private final String timestamp;
-		private final long durationMillisecs;
+	@Override
+	public void onDetach() {
+		super.onDetach();
+		if (queries != null)
+			queries.forEach(m -> m.detach());
+	}
 
-		QueryRow(String query, String timestamp, long durationMillisecs) {
-			this.query = query;
-			this.timestamp = timestamp;
-			this.durationMillisecs = durationMillisecs;
-		}
 
-		public String getQuery() {
-			return query;
-		}
-
-		public String getTimestamp() {
-			return timestamp;
-		}
-
-		public long getDurationMillisecs() {
-			return durationMillisecs;
-		}
+	@Override
+	protected void addListeners() {
+		// TODO Auto-generated method stub
+		
 	}
 }

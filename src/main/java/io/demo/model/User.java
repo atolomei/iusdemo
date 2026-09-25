@@ -151,8 +151,8 @@ public class User extends DemoDBObject {
 				sb.append(" ");
 			sb.append(lasttName);
 		}
-		if (sb.length() == 0 && email != null)
-			sb.append(email);
+		if (sb.length() == 0 && getName() != null)
+			sb.append(getName());
 		return sb.toString();
 	}
 

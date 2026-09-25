@@ -15,7 +15,7 @@ import org.apache.wicket.util.visit.IVisitor;
 
 import io.demo.Logger;
 import io.demo.service.DocumentAnalyzeCacheService;
-import io.demo.service.QueryCacheService;
+import io.demo.service.QueryLogService;
 import io.demo.service.ServiceLocator;
 import io.demo.service.UserSettingsService;
 import io.demo.web.home.ObjectEditor;
@@ -187,7 +187,7 @@ public class UserSettingsEditor extends ObjectEditor<UserSettingsService> {
 	/** Empties the query and document analysis caches (memory and disk). */
 	protected void onCleanCaches(AjaxRequestTarget target) {
 		try {
-			getQueryCacheService().cleanUp();
+			getQueryLogService().cleanUp();
 			getDocumentAnalyzeCacheService().cleanUp();
 			addOrReplace(new AlertPanel<Void>("success", AlertPanel.SUCCESS, getLabel("caches-cleaned-ok")));
 		} catch (Exception e) {
@@ -196,8 +196,8 @@ public class UserSettingsEditor extends ObjectEditor<UserSettingsService> {
 		target.add(this);
 	}
 
-	protected QueryCacheService getQueryCacheService() {
-		return (QueryCacheService) ServiceLocator.getInstance().getBean(QueryCacheService.class);
+	protected QueryLogService getQueryLogService() {
+		return (QueryLogService) ServiceLocator.getInstance().getBean(QueryLogService.class);
 	}
 
 	protected DocumentAnalyzeCacheService getDocumentAnalyzeCacheService() {

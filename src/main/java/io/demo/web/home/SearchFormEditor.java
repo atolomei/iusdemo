@@ -36,9 +36,15 @@ import io.wktui.nav.toolbar.ToolbarItem;
 import io.wktui.nav.toolbar.ToolbarItem.Align;
 import io.wktui.struct.list.ListPanel;
 import io.demo.Logger;
+import io.demo.model.db.service.QueryDBService;
+import io.demo.results.DateRange;
+import io.demo.results.ReasoningEffortOption;
+import io.demo.results.SubjectOption;
 import io.demo.service.QueryHistoryService;
+import io.demo.service.QueryLogService;
 import io.demo.service.ServiceLocator;
 import io.demo.service.UserSettingsService;
+import io.demo.service.rag.KbeeRAGClient;
 import io.demo.web.event.SearchEvent;
 import io.wktui.editor.ObjectUpdateEvent;
 import io.wktui.error.AlertPanel;
@@ -46,21 +52,19 @@ import io.wktui.error.SimpleAlertRow;
 import io.wktui.event.MenuAjaxEvent;
 import wktui.base.InvisiblePanel;
 
-public class SearchFormEditor extends ObjectEditor<String>   {
+public class SearchFormEditor extends ObjectEditor<String> {
 
 	private static final long serialVersionUID = 1L;
 
-	@SuppressWarnings("unused")
 	static private Logger logger = Logger.getLogger(SearchFormEditor.class.getName());
 
 	private TextAreaField<String> textField;
-	
+
 	private boolean submitted = false;
 
 	private String text;
-	
-	
-	ListPanel<String> historyPanel;
+
+	private ListPanel<io.demo.model.Query> historyPanel;
 
 	/** Container of the history section, collapsed by default. */
 	private WebMarkupContainer historyContainer;
@@ -68,6 +72,47 @@ public class SearchFormEditor extends ObjectEditor<String>   {
 	/** Whether the history section is expanded. Collapsed by default. */
 	private boolean historyVisible = false;
 
+	/** toolbar selections passed to the ResultsPanel with the SearchEvent */
+	private DateRange dateRange = DateRange.getDefault();
+	private SubjectOption subjectOption = SubjectOption.getDefault();
+	private ReasoningEffortOption reasoningEffortOption = ReasoningEffortOption.getDefault();
+
+
+	
+	public SearchFormEditor(String id) {
+		this(id, Model.of(new String()));
+	}
+
+	public SearchFormEditor(String id, IModel<String> model) {
+		super(id, model);
+		this.setOutputMarkupId(true);
+	}
+	
+	
+	
+	public DateRange getDateRange() {
+		return dateRange;
+	}
+
+	public void setDateRange(DateRange dateRange) {
+		this.dateRange = dateRange;
+	}
+
+	public SubjectOption getSubjectOption() {
+		return subjectOption;
+	}
+
+	public void setSubjectOption(SubjectOption subjectOption) {
+		this.subjectOption = subjectOption;
+	}
+
+	public ReasoningEffortOption getReasoningEffortOption() {
+		return reasoningEffortOption;
+	}
+
+	public void setReasoningEffortOption(ReasoningEffortOption reasoningEffortOption) {
+		this.reasoningEffortOption = reasoningEffortOption;
+	}
 
 	public String getText() {
 		return text;
@@ -77,14 +122,6 @@ public class SearchFormEditor extends ObjectEditor<String>   {
 		this.text = text;
 	}
 
-	public SearchFormEditor(String id) {
-		this(id, Model.of(new String()));
-	}
-
-	public SearchFormEditor(String id, IModel<String> model) {
-		super(id, model);
-		this.setOutputMarkupId(true);
-	}
 
 	@Override
 	public void onDetach() {
@@ -96,7 +133,7 @@ public class SearchFormEditor extends ObjectEditor<String>   {
 	public void onInitialize() {
 		super.onInitialize();
 
-		//setUpModel();
+		// setUpModel();
 
 		this.historyContainer = new WebMarkupContainer("historyContainer") {
 			private static final long serialVersionUID = 1L;
@@ -109,7 +146,17 @@ public class SearchFormEditor extends ObjectEditor<String>   {
 		this.historyContainer.setOutputMarkupPlaceholderTag(true);
 		add(this.historyContainer);
 
-		historyPanel = new ListPanel<String>("history",  getHistoryModel()) {
+		historyPanel = new ListPanel<io.demo.model.Query>("history", getHistoryModel()) {
+
+			@Override
+			public IModel<String> getItemLabel(IModel<io.demo.model.Query> model) {
+				return Model.of(model.getObject().getQuery());
+			}
+
+			@Override
+			public void onClick(IModel<io.demo.model.Query> model) {
+				SearchFormEditor.this.onSearchHistory(model);
+			}
 
 			@Override
 			protected String getListGroupItemCss() {
@@ -117,17 +164,14 @@ public class SearchFormEditor extends ObjectEditor<String>   {
 			}
 		};
 
-		
-		historyPanel.setHasExpander(false);	
+		historyPanel.setHasExpander(false);
 
-		historyPanel.setItemMenu(false);	
+		historyPanel.setItemMenu(false);
 		historyPanel.setSettings(false);
 		historyPanel.setToolbarVisible(false);
-		
+
 		this.historyContainer.add(historyPanel);
-		
-		
-		
+
 		add(new InvisiblePanel("error"));
 		add(new InvisiblePanel("success"));
 
@@ -137,11 +181,33 @@ public class SearchFormEditor extends ObjectEditor<String>   {
 		add(form);
 		setForm(form);
 
-		textField = new TextAreaField<String>("text", getTextModel(), getLabel("text"), 9);
-		
-		getForm().add(textField);
+		// --- toolbar: Período / Materia / Máx (above the "Consulta" field) ---
 
-		 
+		org.apache.wicket.markup.html.form.DropDownChoice<DateRange> dates = new org.apache.wicket.markup.html.form.DropDownChoice<DateRange>("daterange", new PropertyModel<DateRange>(this, "dateRange"),
+				java.util.Arrays.asList(DateRange.values()), new org.apache.wicket.markup.html.form.ChoiceRenderer<DateRange>("label"));
+		getForm().add(dates);
+
+		org.apache.wicket.markup.html.form.DropDownChoice<SubjectOption> subject = new org.apache.wicket.markup.html.form.DropDownChoice<SubjectOption>("subject", new PropertyModel<SubjectOption>(this, "subjectOption"),
+				java.util.Arrays.asList(SubjectOption.values()), new org.apache.wicket.markup.html.form.ChoiceRenderer<SubjectOption>("label"));
+		getForm().add(subject);
+
+		org.apache.wicket.markup.html.form.DropDownChoice<ReasoningEffortOption> effort = new org.apache.wicket.markup.html.form.DropDownChoice<ReasoningEffortOption>("reasoningeffort", new PropertyModel<ReasoningEffortOption>(this, "reasoningEffortOption"),
+				java.util.Arrays.asList(ReasoningEffortOption.values()), new org.apache.wicket.markup.html.form.ChoiceRenderer<ReasoningEffortOption>("label"));
+		getForm().add(effort);
+
+		// --- alert displayed at the bottom when the RAG server is not accessible ---
+		add(new AlertPanel<Void>("ragAlert", AlertPanel.DANGER, getLabel("rag-not-available")) {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public boolean isVisible() {
+				return !getRAGClient().isAvailable();
+			}
+		});
+
+		textField = new TextAreaField<String>("text", getTextModel(), getLabel("text"), 9);
+
+		getForm().add(textField);
 
 		SubmitButton<String> sm = new SubmitButton<String>("send", getModel(), getForm()) {
 
@@ -205,7 +271,7 @@ public class SearchFormEditor extends ObjectEditor<String>   {
 			}
 		}));
 		getForm().add(toggleHistory);
-		
+
 		edit();
 
 		form.updateModel();
@@ -217,70 +283,87 @@ public class SearchFormEditor extends ObjectEditor<String>   {
 			}
 		});
 
-	 ;
+		;
 
 	}
 
-	private List<IModel<String>> getHistoryModel() {
-		
-		List<IModel<String>> models = new ArrayList<>();
-		
+	private List<IModel<io.demo.model.Query>> getHistoryModel() {
+
+		List<IModel<io.demo.model.Query>> models = new ArrayList<>();
+
 		// limit the history to the max configured by the user
 		int max = getUserSettingsService().getMaxHistory();
 
-		for (String query : getQueryHistoryService().getHistory()) {
-			if (max > 0 && models.size() >= max)
-				break;
-			models.add(Model.of(query));
-		}
-		
+		// use detachable models keyed by id so the JPA entities (with their
+		// results JSON and lazy proxies) are never serialized into the session
+		getQueryDBService().getRecent(max).forEach(query -> {
+			models.add(new QueryModel(query));
+		});
+
 		return models;
 	}
 
-	protected QueryHistoryService getQueryHistoryService() {
-		return (QueryHistoryService) ServiceLocator.getInstance().getBean(QueryHistoryService.class);
-	}
+	/**
+	 * LoadableDetachableModel for a {@link io.demo.model.Query}: only the id is
+	 * kept across requests; the entity is reloaded from the database on demand
+	 * and released by Wicket's detach mechanism at the end of the request.
+	 */
+	private static class QueryModel extends org.apache.wicket.model.LoadableDetachableModel<io.demo.model.Query> {
 
-	protected UserSettingsService getUserSettingsService() {
-		return (UserSettingsService) ServiceLocator.getInstance().getBean(UserSettingsService.class);
-	}
+		private static final long serialVersionUID = 1L;
 
-	
+		private final Long id;
+
+		QueryModel(io.demo.model.Query query) {
+			super(query);
+			this.id = query.getId();
+		}
+
+		@Override
+		protected io.demo.model.Query load() {
+			QueryDBService service = (QueryDBService) ServiceLocator.getInstance().getBean(QueryDBService.class);
+			return service.findById(id).orElse(null);
+		}
+	}
 
 	private IModel<String> getTextModel() {
 		return new PropertyModel<String>(this, "text");
 	}
 
-	
+	protected KbeeRAGClient getRAGClient() {
+		return (KbeeRAGClient) ServiceLocator.getInstance().getBean(KbeeRAGClient.class);
+	}
+
 	@SuppressWarnings("unused")
 	private void setTextModel(IModel<String> model) {
 		this.textField.setModel(model);
 	}
-	
-	
-/**	protected void setUpModel() {
-		try {
-			setModel(new ObjectModel<Candidate>(getCandidateDBService().findWithDeps(getModel().getObject().getId()).get()));
-		} catch (Exception e) {
-			logger.error(e);
-			throw new RuntimeException(e);
-		}
-	}
 
-**/
-	
+	/**
+	 * protected void setUpModel() { try { setModel(new
+	 * ObjectModel<Candidate>(getCandidateDBService().findWithDeps(getModel().getObject().getId()).get()));
+	 * } catch (Exception e) { logger.error(e); throw new RuntimeException(e); } }
+	 * 
+	 **/
+
 	protected void onSave(AjaxRequestTarget target) {
 
 		try {
 
-			//getForm().setFormState(FormState.VIEW);
+			// getForm().setFormState(FormState.VIEW);
 			getForm().updateReload();
 
 			target.add(this);
 
+			if (getText() == null || getText().trim().isEmpty()) {
+				addOrReplace(new SimpleAlertRow<String>("error", Model.of("Debe ingresar un texto para buscar")));
+				target.add(this);
+				return;
+			}
+
 			// fire the SearchEvent; DemoHomePage listens to it, executes the
 			// search, updates the user's history and refreshes the results
-			fireScanAll(new SearchEvent(getText(), target));
+			fireScanAll(new SearchEvent(getText(), getDateRange(), getSubjectOption(), getReasoningEffortOption(), target));
 
 			refreshHistoryPanel();
 
@@ -293,20 +376,27 @@ public class SearchFormEditor extends ObjectEditor<String>   {
 
 	/** Rebuilds the history panel so it reflects the current query history. */
 	public void refreshHistoryPanel() {
-		
-		ListPanel<String> panel = new ListPanel<String>("history", getHistoryModel()) {
+
+		ListPanel<io.demo.model.Query> panel = new ListPanel<io.demo.model.Query>("history", getHistoryModel()) {
 
 			@Override
-			public void onClick( IModel<String> model ) {
+			public IModel<String> getItemLabel(IModel<io.demo.model.Query> model) {
+				return Model.of(model.getObject().getQuery());
+			}
+
+			@Override
+			public void onClick(IModel<io.demo.model.Query> model) {
 				SearchFormEditor.this.onSearchHistory(model);
 			}
 
-			
-			@Override
-			protected String getListGroupItemCss() {
-				return "list-group-item  border-0";
-			}
+			//@Override
+			//protected String getListGroupItemCss() {
+			//	return "list-group-item  border-0";
+			//}
 		};
+		
+		
+		panel.setBorder(true);
 		panel.setHasExpander(false);
 		panel.setItemMenu(false);
 		panel.setSettings(false);
@@ -315,15 +405,24 @@ public class SearchFormEditor extends ObjectEditor<String>   {
 		this.historyContainer.addOrReplace(historyPanel);
 	}
 
-	protected void onSearchHistory(IModel<String> model) {
-		 
-		
+	protected void onSearchHistory(IModel<io.demo.model.Query> model) {
+
+		io.demo.model.Query logged = model.getObject();
+
 		PageParameters params = new PageParameters();
-		params.add("query", model.getObject());
-		setResponsePage( new DemoHomePage(params  ));
+		params.add("query", logged.getQuery());
+
+		// pass the toolbar filters saved with the query so DemoHomePage can
+		// restore the selectors and re-run the search with the same options
+		params.add("dateRangeOption", String.valueOf(logged.getDateRangeOption()));
+		params.add("subjectOption", String.valueOf(logged.getSubjectOption()));
+		params.add("reasoningEffortOption", String.valueOf(logged.getReasoningEffortOption()));
+
 		
-				
+		logger.debug(model.getObject().toString());;
 		
+		setResponsePage(new DemoHomePage(params));
+
 	}
 
 	protected void onCancel(AjaxRequestTarget target) {

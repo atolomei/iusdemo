@@ -32,6 +32,7 @@ import jakarta.persistence.InheritanceType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Transient;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -83,6 +84,21 @@ public class DemoDBObject extends DemoObject implements Identifiable, Auditable 
 	@Enumerated(EnumType.ORDINAL)
 	private ObjectState state;
 
+	
+	@Transient
+	private boolean dependecies = false;
+
+	
+	public boolean isDependencies() {
+		return dependecies;
+	}
+
+	public void setDependencies(boolean b) {
+		this.dependecies = b;
+	}
+
+	
+	
 	@Override
 	public String getTitle() {
 		return name;
@@ -92,4 +108,5 @@ public class DemoDBObject extends DemoObject implements Identifiable, Auditable 
 		return df;
 	}
 
+	
 }

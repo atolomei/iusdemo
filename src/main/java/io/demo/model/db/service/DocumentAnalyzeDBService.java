@@ -47,6 +47,23 @@ public class DocumentAnalyzeDBService extends DBService<DocumentAnalyze, Long> {
 		return q.getResultList();
 	}
 
+	/**
+	 * Returns the most recent {@link DocumentAnalyze} for the given RAG
+	 * document id and question, or null if none was logged.
+	 */
+	@Transactional
+	public DocumentAnalyze getMostRecent(String ragDocumentId, String question) {
+		CriteriaBuilder cb = getEntityManager().getCriteriaBuilder();
+		CriteriaQuery<DocumentAnalyze> cq = cb.createQuery(DocumentAnalyze.class);
+		Root<DocumentAnalyze> root = cq.from(DocumentAnalyze.class);
+		cq.select(root).where(cb.and(
+				cb.equal(root.get("ragDocumentId"), ragDocumentId),
+				cb.equal(root.get("question"), question)));
+		cq.orderBy(cb.desc(root.get("created")));
+		List<DocumentAnalyze> list = getEntityManager().createQuery(cq).setMaxResults(1).getResultList();
+		return list.isEmpty() ? null : list.get(0);
+	}
+
 	@Override
 	public String toJSON() {
 		return null;

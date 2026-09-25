@@ -1,5 +1,6 @@
 package io.demo.web.user;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -55,6 +56,12 @@ public class UserEditor extends ObjectEditor<User> {
 		if (ouser.get().getId().equals(getModel().getObject().getId()))
 			return true;
 
+		
+		if (getModel().getObject().getRole() == Role.SYSADMIN)
+			return isRoot();
+		
+		
+		
 		Role role = ouser.get().getRole();
 		return role == Role.SYSADMIN || role == Role.ADMIN;
 	}
@@ -80,7 +87,11 @@ public class UserEditor extends ObjectEditor<User> {
 
 			@Override
 			public IModel<List<Role>> getChoices() {
-				return new ListModel<Role>(Arrays.asList(Role.values()));
+				
+				List<Role> roles = new ArrayList<Role>();
+				roles.add(Role.ADMIN);
+				roles.add(Role.REGULAR_USER);
+				return new ListModel<Role>(roles);
 			}
 		};
 
@@ -161,11 +172,10 @@ public class UserEditor extends ObjectEditor<User> {
 		target.add(this);
 	}
 
-	protected Optional<User> getSessionUser() {
-		if (getPage() instanceof BasePage)
-			return ((BasePage) getPage()).getSessionUser();
-		return Optional.empty();
+	protected java.util.Optional<io.demo.model.User> getSessionUser() {
+		return io.demo.web.WebSessionUser.get();
 	}
+
 
 	protected UserDBService getUserDBService() {
 		return (UserDBService) ServiceLocator.getInstance().getBean(UserDBService.class);

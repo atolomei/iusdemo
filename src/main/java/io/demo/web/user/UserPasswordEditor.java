@@ -5,8 +5,6 @@ import java.util.Optional;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.PropertyModel;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
 import io.demo.Logger;
 import io.demo.model.Role;
 import io.demo.model.User;
@@ -154,9 +152,7 @@ public class UserPasswordEditor extends ObjectEditor<User> {
 			updateModel();
 
 			if (getNewPassword() != null && !getNewPassword().trim().isEmpty()) {
-				String hash = new BCryptPasswordEncoder().encode(getNewPassword());
-				getModel().getObject().setPassword(hash);
-				getUserDBService().save(getModel().getObject(), getSessionUser().orElse(null));
+				getUserDBService().updatePassword(getModel().getObject(), getNewPassword(), getSessionUser().orElse(null));
 			}
 
 			getForm().setFormState(FormState.VIEW);

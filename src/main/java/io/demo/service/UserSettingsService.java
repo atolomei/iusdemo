@@ -20,17 +20,17 @@ public class UserSettingsService implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	/** Whether the query cache of {@link LegalSearchService} is used. */
-	private boolean useQueryCache = true;
+	///** Whether the query cache of {@link LegalSearchService} is used. */
+	//private boolean useQueryCache = true;
 
 	/** Max number of results displayed by the ResultsPanel. */
 	private int maxSearchResults = 5;
 
 	/** Whether results are sorted by date, most recent first. */
-	private boolean recentFirst = true;
+	private boolean recentFirst = false;
 
 	/** Max number of entries of the query history displayed. */
-	private int maxHistory = 10;
+	private int maxHistory = 50;
 
 	/** Whether the analysis is displayed in the expanded panel. */
 	private boolean showAnalysis = true;
@@ -41,13 +41,13 @@ public class UserSettingsService implements Serializable {
 	/** Max number of quotes displayed in the expanded panel. */
 	private int maxQuotes = 3;
 
-	public boolean isUseQueryCache() {
-		return useQueryCache;
-	}
+	//public boolean isUseQueryCache() {
+	//	return useQueryCache;
+	//}
 
-	public void setUseQueryCache(boolean useQueryCache) {
-		this.useQueryCache = useQueryCache;
-	}
+	//public void setUseQueryCache(boolean useQueryCache) {
+	//	this.useQueryCache = useQueryCache;
+	//}
 
 	public int getMaxSearchResults() {
 		return maxSearchResults;

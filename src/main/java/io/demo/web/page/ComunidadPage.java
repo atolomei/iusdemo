@@ -51,5 +51,14 @@ public class ComunidadPage extends BasePage {
 		return role== Role.SYSADMIN || role== Role.ADMIN;
 		
 		
+	}
+
+
+
+
+	@Override
+	protected void addListeners() {
+		// TODO Auto-generated method stub
+		
 	} 
 }

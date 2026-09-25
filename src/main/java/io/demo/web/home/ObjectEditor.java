@@ -9,6 +9,13 @@ import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.StringResourceModel;
 import org.apache.wicket.util.visit.IVisit;
 import org.apache.wicket.util.visit.IVisitor;
+
+import io.demo.model.db.service.QueryDBService;
+import io.demo.model.db.service.UserDBService;
+import io.demo.service.QueryHistoryService;
+import io.demo.service.QueryLogService;
+import io.demo.service.ServiceLocator;
+import io.demo.service.UserSettingsService;
 import io.wktui.editor.Editor;
 import io.wktui.form.Form;
 import io.wktui.form.FormState;
@@ -171,7 +178,44 @@ public class ObjectEditor<T> extends ObjectModelPanel<T> implements Editor<T> {
 		return Locale.getDefault();
 	}
 
+	protected QueryLogService getQueryLogService() {
+		return (QueryLogService) ServiceLocator.getInstance().getBean(QueryLogService.class);
+	}
+	
+	protected QueryHistoryService getQueryHistoryService() {
+		return (QueryHistoryService) ServiceLocator.getInstance().getBean(QueryHistoryService.class);
+	}
 
+	protected UserSettingsService getUserSettingsService() {
+		return (UserSettingsService) ServiceLocator.getInstance().getBean(UserSettingsService.class);
+	}
+
+	protected QueryDBService getQueryDBService() {
+		return (QueryDBService) ServiceLocator.getInstance().getBean(QueryDBService.class);
+	}
+
+	protected java.util.Optional<io.demo.model.User> getSessionUser() {
+		return io.demo.web.WebSessionUser.get();
+	}
+
+	
+	
+	protected boolean isAdmin() {
+		return getUserDBService().isAdmin(getSessionUser().get());
+	}
+	
+	
+	protected boolean isRoot() {
+		return getUserDBService().isRoot(getSessionUser().get());
+	}
+
+	protected UserDBService getUserDBService() {
+		return (UserDBService) ServiceLocator.getInstance().getBean(UserDBService.class);
+	}
+	
+ 
+	
+	
 	protected String normalizeFileName(String name) {
 		String str = name.replaceAll("[^\\x00-\\x7F]|[\\s]+", "-").toLowerCase().trim();
 		str = str.replace("'", "");

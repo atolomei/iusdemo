@@ -23,6 +23,7 @@ import org.apache.wicket.util.visit.IVisit;
 import org.apache.wicket.util.visit.IVisitor;
 import org.wicketstuff.annotation.mount.MountPath;
 
+import io.demo.App;
 import io.demo.Logger;
 import io.demo.email.EmailService;
 import io.demo.email.EmailTemplateService;
@@ -30,6 +31,7 @@ import io.demo.model.PersistentToken;
 import io.demo.model.User;
 import io.demo.model.db.service.PersistentTokenDBService;
 import io.demo.model.db.service.UserDBService;
+import io.demo.web.page.BasePage;
 import io.wktui.error.AlertPanel;
 import io.wktui.error.ErrorPanel;
 import io.wktui.form.Form;
@@ -49,7 +51,7 @@ import wktui.bootstrap.Bootstrap;
  * @author atolomei@novamens.com (Alejandro Tolomei)
  */
 @MountPath("/forgot")
-public class ForgotPasswordPage extends WebPage {
+public class ForgotPasswordPage extends BasePage {
 
 	private static final long serialVersionUID = 1L;
 
@@ -75,9 +77,7 @@ public class ForgotPasswordPage extends WebPage {
 	@SpringBean
 	private EmailTemplateService emailTemplateService;
 
-	public ForgotPasswordPage() {
-		super();
-	}
+	 
 
 	public ForgotPasswordPage(PageParameters parameters) {
 		super(parameters);
@@ -92,10 +92,10 @@ public class ForgotPasswordPage extends WebPage {
 	}
 
 	@Override
-	protected void onInitialize() {
+	public void onInitialize() {
 		super.onInitialize();
 
-		add(new Image("miniLogo", new PackageResourceReference(ForgotPasswordPage.class, "kbee.png")));
+		add(new Image("miniLogo", new PackageResourceReference(App.class, "pjsf.png")));
 
 		add(new InvisiblePanel("alert"));
 
@@ -114,7 +114,7 @@ public class ForgotPasswordPage extends WebPage {
 
 		userNameField = new TextField<String>("username", new PropertyModel<String>(this, "username"), getLabel("username-email-phone"));
 		userNameField.setTitleCss("row mb-1");
-		userNameField.setCss("text-center text-lg-center text-md-center text-sm-center text-xl-center textl-xxl-center form-control bg-dark text-light");
+		userNameField.setCss("text-center text-lg-center text-md-center text-sm-center text-xl-center textl-xxl-center form-control");
 
 		SubmitButton<User> buttons = new SubmitButton<User>("buttons-bottom", getForm()) {
 
@@ -153,7 +153,7 @@ public class ForgotPasswordPage extends WebPage {
 							String subject = ForgotPasswordPage.this.getLabel("password-reset-subject").getObject();
 							String url = getServerUrl() + "/password-reset/" + u.getId().toString() + "-" + tokenValue + "-" + getLocale().getLanguage();
 
-							String text = getEmailTemplateService().render(EmailTemplateService.PASSWORD_RESET, Map.of("application", "demo", "personName", personName, "resetLink", url));
+							String text = getEmailTemplateService().render(EmailTemplateService.PASSWORD_RESET, Map.of("application", "Antecedentes Jurídicos", "personName", personName, "resetLink", url));
 
 							logger.debug("Sending email to -> " + email);
 
@@ -190,7 +190,7 @@ public class ForgotPasswordPage extends WebPage {
 			}
 
 			protected String getSaveCss() {
-				return "btn text-light border-light btn-lg";
+				return "btn btn-primary btn-lg";
 			}
 		};
 		form.add(buttons);
@@ -210,7 +210,7 @@ public class ForgotPasswordPage extends WebPage {
 		return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
 	}
 
-	private String getServerUrl() {
+	public String getServerUrl() {
 		String protocol = ((WebRequest) RequestCycle.get().getRequest()).getUrl().getProtocol();
 		String host = ((WebRequest) RequestCycle.get().getRequest()).getUrl().getHost();
 		Integer iport = ((WebRequest) RequestCycle.get().getRequest()).getUrl().getPort();
@@ -222,7 +222,7 @@ public class ForgotPasswordPage extends WebPage {
 		return form;
 	}
 
-	private UserDBService getUserDBService() {
+	public UserDBService getUserDBService() {
 		return userDBService;
 	}
 
@@ -234,7 +234,7 @@ public class ForgotPasswordPage extends WebPage {
 		return emailService;
 	}
 
-	private EmailTemplateService getEmailTemplateService() {
+	public EmailTemplateService getEmailTemplateService() {
 		return emailTemplateService;
 	}
 
@@ -246,5 +246,17 @@ public class ForgotPasswordPage extends WebPage {
 				field.editOn();
 			}
 		});
+	}
+
+	@Override
+	protected void addListeners() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean canAccess(Optional<User> user) {
+		// public page: accessible without being signed in
+		return true;
 	}
 }

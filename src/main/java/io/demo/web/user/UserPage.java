@@ -40,16 +40,33 @@ public class UserPage extends DemoBasePage {
 
 	private IModel<User> model;
 	private UserEditor editor;
-	private UserPasswordEditor passwordEditor;
+	// private UserPasswordEditor passwordEditor;
 
+
+	private boolean isMyAccount =  false;
+	
+	
+	public UserPage(IModel<User> model, boolean isMyAccount) {
+		super(new PageParameters());
+		this.model = model;
+		this.isMyAccount = isMyAccount;
+	}
+	
+	
+	
 	public UserPage(PageParameters parameters) {
 		super(parameters);
 
+		this.isMyAccount = false;
 		Long id = parameters.get("id").toOptionalLong();
 		if (id != null) {
 			Optional<User> o_user = getUserDBService().findById(id);
 			if (o_user.isPresent())
 				this.model = new ObjectModel<User>(o_user.get());
+			
+			if (getSessionUser().isPresent() && getSessionUser().get().getId().equals(id)) {
+				this.isMyAccount = true;
+			}
 		}
 	}
 
@@ -96,8 +113,8 @@ public class UserPage extends DemoBasePage {
 		this.editor = new UserEditor("editor", model);
 		add(editor);
 
-		this.passwordEditor = new UserPasswordEditor("passwordEditor", model);
-		add(passwordEditor);
+		//this.passwordEditor = new UserPasswordEditor("passwordEditor", model);
+		//add(passwordEditor);
 
 		List<ToolbarItem> items = new ArrayList<ToolbarItem>();
 
@@ -158,5 +175,13 @@ public class UserPage extends DemoBasePage {
 
 	public UserDBService getUserDBService() {
 		return (UserDBService) ServiceLocator.getInstance().getBean(UserDBService.class);
+	}
+
+
+
+	@Override
+	protected void addListeners() {
+		// TODO Auto-generated method stub
+		
 	}
 }

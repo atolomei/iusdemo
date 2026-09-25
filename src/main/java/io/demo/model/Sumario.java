@@ -13,7 +13,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class Sumario extends Documento {
+public class Sumario extends RAGDocumento {
 
 	private static final long serialVersionUID = 1L;
 
@@ -23,7 +23,7 @@ public class Sumario extends Documento {
 	@JsonProperty("fecha")
 	private OffsetDateTime fecha;
 
-	@JsonProperty("mertadatos")
+	@JsonProperty("metadatos")
 	private Map<String, String> metadatos;
 
 	@JsonProperty("voces")

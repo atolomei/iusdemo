@@ -12,12 +12,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import io.demo.model.DemoObjectMapper;
-import io.demo.model.Sentencia;
+import io.demo.model.Query;
+import io.demo.model.RAGSentencia;
 import io.demo.model.User;
 import io.demo.service.rag.DocumentAnalysisResponse;
 import io.demo.service.rag.KbeeRAGClient;
 import io.demo.service.rag.RAGConverter;
 import io.demo.service.rag.RagResponse;
+import io.demo.util.Check;
 import jakarta.annotation.PostConstruct;
 
 
@@ -35,14 +37,11 @@ public class LegalSearchService extends BaseService {
 	static final private  ObjectMapper jsonMapper = new DemoObjectMapper();
 	
 	
-	private List<Sentencia> list;
+	private List<RAGSentencia> list;
 
 	
 	@Autowired
 	DateTimeService dateService;
-	
-	@Autowired
-	QueryCacheService queryCacheService;
 	
 	@Autowired
 	QueryHistoryService queryHistoryService;
@@ -57,10 +56,9 @@ public class LegalSearchService extends BaseService {
 	QueryLogService queryLogService;
 	
 	
-	public LegalSearchService(Settings settings, DateTimeService dateService, QueryCacheService queryCacheService, QueryHistoryService queryHistoryService, DocumentAnalyzeCacheService documentAnalyzeCacheService, KbeeRAGClient kbeeRAGClient, QueryLogService queryLogService) {
+	public LegalSearchService(Settings settings, DateTimeService dateService, QueryHistoryService queryHistoryService, DocumentAnalyzeCacheService documentAnalyzeCacheService, KbeeRAGClient kbeeRAGClient, QueryLogService queryLogService) {
 		super(settings);
 		this.dateService=dateService;
-		this.queryCacheService=queryCacheService;
 		this.queryHistoryService=queryHistoryService;
 		this.documentAnalyzeCacheService=documentAnalyzeCacheService;
 		this.kbeeRAGClient=kbeeRAGClient;
@@ -69,9 +67,99 @@ public class LegalSearchService extends BaseService {
 	}
 
 	
-	public List<Sentencia> search(String text, User user, String sessionId) {
-		return search(text, user, sessionId, true);
+	public List<RAGSentencia> search(
+			
+			String text, 
+			OffsetDateTime from,
+			OffsetDateTime to,
+			String subject,
+			
+			
+			User user, 
+			String sessionId) {
+		
+		boolean useCache = getSettings().isUseCacheQueries();
+		
+		return search(text, from, to,  subject, user, sessionId, useCache );
 	}
+
+	
+	
+
+	/**
+	 * Executes a search.
+	 *
+	 * @param useCache whether the query cache is used (lookup and store). When
+	 *                 {@code false} the search is always executed and the
+	 *                 result is not stored in the cache.
+	 */
+	public List<RAGSentencia> search(	String text, 
+			OffsetDateTime from,
+			OffsetDateTime to,
+			String subject,
+			User user, 
+			String sessionId, 
+			boolean useCache) {
+		return search(text, from, to, subject, user, sessionId, useCache, null, null, null);
+	}
+
+	/**
+	 * Executes a search, logging the toolbar filter options selected by the user.
+	 * The {@link io.demo.results.ReasoningEffortOption} (topK + key) is forwarded to
+	 * the Kbee RAG Server API.
+	 */
+	public List<RAGSentencia> search(	
+			String text, 
+			OffsetDateTime from,
+			OffsetDateTime to,
+			String subject,
+			User user, 
+			String sessionId, 
+			boolean useCache,
+			io.demo.results.DateRange dateRange,
+			io.demo.results.SubjectOption subjectOption,
+			io.demo.results.ReasoningEffortOption reasoningEffortOption) {
+
+		// record the query in the user's history (session-scoped). When called
+		// from a non-web thread (e.g. the regression test runner) there is no
+		// active HTTP session, so the session-scoped bean is not available and
+		// the history is simply skipped
+		try {
+			getQueryHistoryService().record(text);
+		} catch (org.springframework.beans.factory.support.ScopeNotActiveException e) {
+			logger.debug("no active session -> query history not recorded");
+		}
+
+		if (!useCache)
+			return executeSearch(text, from, to, subject, user, sessionId, dateRange, subjectOption, reasoningEffortOption);
+
+		// if the query is in the cache -> return the cached result. The cache
+		// key is the hash of text + date range + subject + reasoning effort,
+		// so a change in any of those options is a cache miss
+		Optional<List<RAGSentencia>> cached = getQueryLogService().get(text, dateRange, subjectOption, reasoningEffortOption);
+
+		if (cached.isPresent()) {
+			return cached.get();
+		}
+
+		// otherwise perform the query and store the result in the cache
+		List<RAGSentencia> result = executeSearch(text, from, to, subject, user, sessionId, dateRange, subjectOption, reasoningEffortOption);
+		getQueryLogService().put(text, dateRange, subjectOption, reasoningEffortOption, result);
+		
+		
+		return result;
+	}
+
+	
+	
+	
+	
+	
+	
+	
+	//public List<RAGSentencia> search(String text, User user, String sessionId) {
+	//	return search(text, user, sessionId, true);
+	//}
 
 	/**
 	 * Calls the Kbee RAG Server document analysis endpoint for the given
@@ -81,63 +169,80 @@ public class LegalSearchService extends BaseService {
 	 * @param query         the question to answer about the document
 	 * @return the answer of the {@link io.demo.service.rag.DocumentAnalysisResponse}
 	 */
-	public String analyzeDocument(String ragDocumentId, String query) {
-		return analyzeDocumentResponse(ragDocumentId, query).answer();
+	public String analyzeDocument(String ragDocumentId,Query query,  User user, String sessionId) {
+		return analyzeDocumentResponse(ragDocumentId, query, user, sessionId).answer();
 	}
 
 	/**
 	 * Same as {@link #analyzeDocument(String, String)} but returns the full
 	 * {@link DocumentAnalysisResponse} (cached).
 	 */
-	public DocumentAnalysisResponse analyzeDocumentResponse(String ragDocumentId, String query) {
+	public DocumentAnalysisResponse analyzeDocumentResponse(String ragDocumentId,Query query, User user, String sessionId) {
 
+		Check.requireNonNull(ragDocumentId, "ragDocumentId");
+		Check.requireNonNull(query, "query is null");
+		Check.requireNonNull(user, "user is null");
+		Check.requireNonNull(sessionId, "sessionId is null");
+		
+		
+		
 		// if the analysis is in the cache -> return the cached answer
-		Optional<DocumentAnalysisResponse> cached = getDocumentAnalyzeCacheService().get(ragDocumentId, query);
-		if (cached.isPresent())
+		Optional<DocumentAnalysisResponse> cached = getDocumentAnalyzeCacheService().get(ragDocumentId, query.getId().toString());
+		
+		if (cached.isPresent() && getSettings().isUseCacheDocumentAnalyzeQueries())
 			return cached.get();
 
 		// otherwise call the RAG server and store the response in the cache
+		long startTime = System.currentTimeMillis();
 		DocumentAnalysisResponse response = kbeeRAGClient.analyzeDocument(ragDocumentId, query);
-		getDocumentAnalyzeCacheService().put(ragDocumentId, query, response);
+		long durationMillisecs = System.currentTimeMillis() - startTime;
+		getDocumentAnalyzeCacheService().put(ragDocumentId, query.getId().toString(), response, durationMillisecs, user, sessionId);
 		return response;
 	}
 
 	/**
-	 * Executes a search.
+	 * Returns the general analysis of the query.
+	 * <p>
+	 * If the {@link Query} already has a saved analysis and the query cache is
+	 * enabled, the saved value is returned. Otherwise the Kbee RAG Server
+	 * {@code queryanalysis} endpoint is called with the server's query id, and
+	 * the analysis is saved with the query for following requests.
+	 * </p>
 	 *
-	 * @param useCache whether the query cache is used (lookup and store). When
-	 *                 {@code false} the search is always executed and the
-	 *                 result is not stored in the cache.
+	 * @param query the query (must have a server id)
+	 * @param llm   the llm to use; null -> the same llm used for the query
+	 * @return the query with the analysis fields set
 	 */
-	public List<Sentencia> search(String text, User user, String sessionId, boolean useCache) {
+	public Query queryAnalysis(Query query, String llm) {
 
-		// record the query in the user's history (session-scoped)
-		getQueryHistoryService().record(text);
+		Check.requireNonNull(query, "query is null");
 
-		if (!useCache)
-			return executeSearch(text, user, sessionId);
+		// saved value, if present and the query cache is enabled
+		if (query.getAnalysisText() != null && getSettings().isUseCacheQueries())
+			return query;
 
-		// if the query is in the cache -> return the cached result
-		Optional<List<Sentencia>> cached = getQueryCacheService().get(text);
-		
-		if (cached.isPresent()) {
-			return cached.get();
+		if (query.getServerId()==null) {
+			logger.error("query has no server id -> " + query.toString());
+			return query;
 		}
 
-		// otherwise perform the query and store the result in the cache
-		List<Sentencia> result = executeSearch(text, user, sessionId);
-		getQueryCacheService().put(text, result);
-		
-		
-		return result;
+		// by default use the same llm as the query
+		String analysisLlm = (llm != null && !llm.isBlank()) ? llm : getSettings().getRagLlm();
+
+		io.demo.service.rag.QueryAnalysis analysis = kbeeRAGClient.queryAnalysis(query.getServerId(), analysisLlm);
+
+		query.setAnalysisText(analysis.analysis());
+		query.setAnalysisLlm(analysis.llm());
+		query.setAnalysisDate(analysis.dateCreated() != null ? analysis.dateCreated() : OffsetDateTime.now());
+
+		// persist the analysis with the query
+		if (query.getId() != null)
+			getQueryLogService().getQueryDBService().save(query);
+
+		return query;
 	}
 
 	
-	
-	public QueryCacheService getQueryCacheService() {
-		return this.queryCacheService;
-	}
-
 	public QueryHistoryService getQueryHistoryService() {
 		return this.queryHistoryService;
 	}
@@ -206,7 +311,7 @@ Otro fragmento particularmente fuerte:
 			map.put("fuente",
 					"Fuente Propia N° de expediente: Año de causa: N° de Tomo / Año: 2026\n" + "	 * N° de página de inicio: 0 N° de página de fin: 0 Resolución N°: 738 Cita:\n" + "	 * 738/26 N° de SAIJ: N° de CUIJ: 21 - 517447 - 0");
 
-			Sentencia s1= new Sentencia("1", "NUÑEZ, ALFREDO c/ LA SEGUNDA ART S.A. -SENTENCIA ACCIDENTE Y/O ENFERMEDAD TRABAJO- s/ QUEJA POR DENEGACION DEL RECURSO DE INCONSTITUCIONALIDAD",
+			RAGSentencia s1= new RAGSentencia("1", "NUÑEZ, ALFREDO c/ LA SEGUNDA ART S.A. -SENTENCIA ACCIDENTE Y/O ENFERMEDAD TRABAJO- s/ QUEJA POR DENEGACION DEL RECURSO DE INCONSTITUCIONALIDAD",
 					getDateTimeService().parseOffsetDateTime("18/08/2026"), map,
 					"AUTOS Y SENTENCIAS NRO. 738 AÑO 2026.\n" + "\n" + "Provincia de Santa Fe, 18 de agosto del año 2026.\n"
 							+ "VISTA: La queja por denegación del recurso de inconstitucionalidad planteado por la demandada contra la resolución de fecha 8 de abril del año 2024, dictada por la Cámara de lo Contencioso Administrativo N° 1 en autos \"BONESSA, CRISTINA MÓNICA contra PROVINCIA DE SANTA FE -RECURSO CONTENCIOSO ADMINISTRATIVO- (CUIJ 21-17477734-6)\" (Expte. C.S.J. CUIJ N°: 21-00517447-0); y,\n"
@@ -265,7 +370,7 @@ Otro fragmento particularmente fuerte:
 			map.put("N° de Tomo / Año",
 					"2025");
 			
-			Sentencia s2 = new Sentencia("2", "MALDONADO, JORGE ALBERTO Y OTROS c/ PROVINCIA DE SANTA FE -DAÑOS Y PERJUICIOS- s/ RECURSO DE INCONSTITUCIONALIDAD (CONCEDIDO POR LA CAMARA)",
+			RAGSentencia s2 = new RAGSentencia("2", "MALDONADO, JORGE ALBERTO Y OTROS c/ PROVINCIA DE SANTA FE -DAÑOS Y PERJUICIOS- s/ RECURSO DE INCONSTITUCIONALIDAD (CONCEDIDO POR LA CAMARA)",
 					getDateTimeService().parseOffsetDateTime("06/03/2025"), 
 					map,
 					 
@@ -308,7 +413,7 @@ Otro fragmento particularmente fuerte:
 			map.put("N° de Tomo / Año",
 					"2025");
 			
-			Sentencia s3 = new Sentencia("3", "VERONESE, CLAUDIA c/ RECORD PUBLICISTAS S.R.L. Y OTROS -INCIDENTE DE INOPONIBILIDAD DE INSCRIPCION COMO BIEN DE FAMILIA- s/ QUEJA POR DENEGACION DEL RECURSO DE INCONSTITUCIONALIDAD",
+			RAGSentencia s3 = new RAGSentencia("3", "VERONESE, CLAUDIA c/ RECORD PUBLICISTAS S.R.L. Y OTROS -INCIDENTE DE INOPONIBILIDAD DE INSCRIPCION COMO BIEN DE FAMILIA- s/ QUEJA POR DENEGACION DEL RECURSO DE INCONSTITUCIONALIDAD",
 					getDateTimeService().parseOffsetDateTime("29/07/2025"), 
 					map,
 					 
@@ -397,7 +502,7 @@ Otro fragmento particularmente fuerte:
 			map.put("N° de Tomo / Año",
 					"2025");
 			
-			Sentencia s4 =  new Sentencia("4", "SBRISSA, DANIEL ANTONIO c/ PROVINCIA DE SANTA FE -RECURSO CONTENCIOSO ADMINISTRATIVO- s/ RECURSO DE INCONSTITUCIONALIDAD (PARCIALMENTE CONCEDIDO POR LA CAMARA)",
+			RAGSentencia s4 =  new RAGSentencia("4", "SBRISSA, DANIEL ANTONIO c/ PROVINCIA DE SANTA FE -RECURSO CONTENCIOSO ADMINISTRATIVO- s/ RECURSO DE INCONSTITUCIONALIDAD (PARCIALMENTE CONCEDIDO POR LA CAMARA)",
 					getDateTimeService().parseOffsetDateTime("11/06/2025"), 
 					map,
 					"En la Provincia de Santa Fe, a los once días del mes de junio del año dos mil veinticinco, los señores Ministros de la Corte Suprema de Justicia de la Provincia, "
@@ -431,7 +536,7 @@ Otro fragmento particularmente fuerte:
 			map.put("N° de Tomo / Año",
 					"2025");
 			
-			Sentencia s5 = new Sentencia("5", "TASELLI, SERGIO Y OTROS -RECURSO DE INCONSTITUCIONALIDAD EN CARPETA JUDICICAL SERJAL BENINCASA, PATRICIO; LUZZINI, GUSTAVO; TASELLI, MAXIMO; GALLEGOS, MATIAS Y TASELLI, SERGIO s/ APELACION MULTIPROPOSITO-NULIDAD-INVALIDEZ- s/ RECURSO DE INCONSTITUCIONALIDAD (QUEJA ADMITIDA) (RECURSO EXTRAORDINARIO PARA ANTE LA C.S.J.N.)",
+			RAGSentencia s5 = new RAGSentencia("5", "TASELLI, SERGIO Y OTROS -RECURSO DE INCONSTITUCIONALIDAD EN CARPETA JUDICICAL SERJAL BENINCASA, PATRICIO; LUZZINI, GUSTAVO; TASELLI, MAXIMO; GALLEGOS, MATIAS Y TASELLI, SERGIO s/ APELACION MULTIPROPOSITO-NULIDAD-INVALIDEZ- s/ RECURSO DE INCONSTITUCIONALIDAD (QUEJA ADMITIDA) (RECURSO EXTRAORDINARIO PARA ANTE LA C.S.J.N.)",
 					getDateTimeService().parseOffsetDateTime("05/08/2025"), 
 					map,
 					"En la Provincia de Santa Fe, a los once días del mes de junio del año dos mil veinticinco, los señores Ministros de la Corte Suprema de Justicia de la Provincia, "
@@ -459,20 +564,50 @@ Otro fragmento particularmente fuerte:
 
 	
 	/** Performs the actual search (not cached). Every query is logged in the database. */
-	protected List<Sentencia> executeSearch(String text, User user, String sessionId) {
+	protected List<RAGSentencia> executeSearch(String text, OffsetDateTime from, OffsetDateTime to, String subject, User user, String sessionId) {
+		return executeSearch(text, from, to, subject, user, sessionId, null, null, null);
+	}
+
+	/** Performs the actual search (not cached). Every query is logged in the database with the toolbar options. */
+	protected List<RAGSentencia> executeSearch(String text, OffsetDateTime from, OffsetDateTime to, String subject, User user, String sessionId,
+			io.demo.results.DateRange dateRange, io.demo.results.SubjectOption subjectOption, io.demo.results.ReasoningEffortOption reasoningEffortOption) {
 
 		long startTime = System.currentTimeMillis();
 
-		RagResponse response = this.kbeeRAGClient.executeQuery(text);
+		// optional filters are passed as RagRequest parameters
+		Map<String, String> parameters = new HashMap<>();
+
+		// Solr requires strict ISO-8601 UTC instants (e.g. 2025-09-16T03:00:00Z),
+		// so convert the OffsetDateTime to a UTC Instant before sending it
+		if (from != null)
+			parameters.put("fromDate", from.toInstant().toString());
+
+		if (to != null)
+			parameters.put("toDate", to.toInstant().toString());
+
+		if (subject != null && !subject.isBlank())
+			parameters.put("subject", subject);
+
+		// request from the RAG server the number of rows determined by the
+		// reasoning effort selected in the search form; 0 -> configured default
+		int topK = (reasoningEffortOption != null) ? reasoningEffortOption.getTopK() : 0;
+
+		// give the API client the ReasoningEffortOption (both topK and key)172
+		RagResponse response = this.kbeeRAGClient.executeQuery(text, parameters.isEmpty() ? null : parameters, topK, reasoningEffortOption);
 
 		long durationMillisecs = System.currentTimeMillis() - startTime;
 
-		// log the query in the database (results = json returned by the server)
-		getQueryLogService().log(text, toJson(response), durationMillisecs, user, sessionId);
+		// log the query in the database (results = json returned by the server).
+		// When there is no user (e.g. regression test run) the query is not
+		// logged: the "query" table requires a non-null lastModifiedUser
+		if (user != null)
+			getQueryLogService().log(text, toJson(response), response.queryId(), durationMillisecs, user, sessionId, dateRange, subjectOption, reasoningEffortOption);
+		else
+			logger.debug("no user -> query not logged in the database");
 
 		RAGConverter ragConverter = new RAGConverter(response);
 
-		List<Sentencia> li = ragConverter.convert();
+		List<RAGSentencia> li = ragConverter.convert();
 
 		return li;
 	}

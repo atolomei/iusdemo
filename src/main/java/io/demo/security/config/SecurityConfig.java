@@ -73,10 +73,13 @@ public class SecurityConfig {
 	        // ⭐ Request rules
 	        .authorizeHttpRequests(auth -> auth
 	            .requestMatchers(
+	                "/ping",
 	                "/signin",
 	                "/signin/**",
 	                "/forgot",
 	                "/forgot/**",
+	                "/password-reset",
+	                "/password-reset/**",
 	                "/oauth2/**",
 	                "/wicket/**",
 	                "/wicket/resource/**",

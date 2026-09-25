@@ -1,6 +1,8 @@
 package io.demo.results;
 
 import java.io.File;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -20,16 +22,21 @@ import org.apache.wicket.request.resource.ContentDisposition;
 import org.apache.wicket.util.resource.FileResourceStream;
 
 import io.demo.Logger;
-import io.demo.model.Documento;
-import io.demo.model.Sentencia;
+import io.demo.model.Query;
+import io.demo.model.RAGDocumento;
+import io.demo.model.RAGSentencia;
 import io.demo.service.ServiceLocator;
+import io.demo.service.LegalSearchService;
+import io.demo.service.Settings;
 import io.demo.service.TestQueriesService;
 import io.demo.service.UserSettingsService;
 import io.demo.service.rag.KbeeRAGClient;
 import io.demo.web.home.AnalysisPanel;
 import io.demo.web.panel.DemoObjectListItemPanel;
+import io.demo.web.panel.ObjectModel;
 import io.demo.web.event.DateRangeEvent;
 import io.demo.web.event.OrderOptionEvent;
+import io.demo.web.event.QueryAnalysisEvent;
 import io.demo.web.event.SubjectOptionEvent;
 import io.demo.web.event.TotalOptionEvent;
 import io.wktui.error.AlertPanel;
@@ -41,7 +48,7 @@ import wktui.base.DummyBlockPanel;
 import wktui.base.InvisiblePanel;
 import wktui.base.UIEventListener;
 
-public class ResultsPanel<T extends Documento> extends BasePanel {
+public class ResultsPanel<T extends RAGDocumento> extends BasePanel {
 
 	private static final long serialVersionUID = 1L;
 
@@ -58,7 +65,10 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 
 	
 	private ToolbarResults toolbar;
-	
+
+	/** container of the query general analysis panel (InvisiblePanel by default) */
+	private WebMarkupContainer generalAnalysisContainer;
+
 	
 	private Panel errorPanel;
 
@@ -66,28 +76,73 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 	private boolean isHelpVisible = false;
 
 	/** the query whose RagResponse was saved to disk by {@link KbeeRAGClient} */
-	private String query;
+	//private String query;
 
-	public void setQuery(String query) {
-		this.query = query;
-	}
-
-	public String getQuery() {
-		return this.query;
-	}
+	private IModel<Query> queryModel = null;
 	
 	
+	 private DateRange dateRange = null;
+	 private SubjectOption subjectOption=null;
+	 private OrderOption orderOption=null;
+	 private TotalOption totalOption = TotalOption.getDefault();
+	 private ReasoningEffortOption reasoningEffortOption = ReasoningEffortOption.getDefault();
+	 
+	 
+	
+	/**
+	 * 
+	 * 
+	 * @param id
+	 */
 	public ResultsPanel(String id) {
 		super(id);
-		 
 	}
 
+	
 	public ResultsPanel(String id, List<IModel<T>> list) {
 		super(id);
 		this.list = list;
-		 
+	}
+	 
+ 
+	@Override
+	public void onDetach() {
+		super.onDetach();
+		
+		if (list!=null)	{
+			list.forEach(i-> i.detach());
+		}
+		
+		if (queryModel != null)
+			queryModel.detach();
+		
+		
 	}
 
+ 
+	/** selections received from the SearchForm (displayed read-only in the toolbar) */
+	public void setDateRange(DateRange dateRange) {
+		this.dateRange = dateRange;
+	}
+
+	public void setSubjectOption(SubjectOption subjectOption) {
+		this.subjectOption = subjectOption;
+	}
+
+	public void setTotalOption(TotalOption totalOption) {
+		if (totalOption != null)
+			this.totalOption = totalOption;
+	}
+
+	/** reasoning effort selected in the SearchForm, used in the calls to the LegalSearchService API */
+	public void setReasoningEffortOption(ReasoningEffortOption reasoningEffortOption) {
+		if (reasoningEffortOption != null)
+			this.reasoningEffortOption = reasoningEffortOption;
+	}
+
+	public ReasoningEffortOption getReasoningEffortOption() {
+		return this.reasoningEffortOption;
+	}
 	
 	public void setHelpVisible(boolean b) {
 		this.isHelpVisible = b;
@@ -105,8 +160,10 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 	}
 	
 	protected List<IModel<T>> getList() {
+		//return this.list;
 		return applyUserSettings(this.list);
 	}
+	
 
 	/**
 	 * Applies the user's preferences to the result list: sorting by date
@@ -116,23 +173,58 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 
 		if (source == null)
 			return new ArrayList<IModel<T>>();
-
-		UserSettingsService settings = getUserSettingsService();
+ 
 
 		List<IModel<T>> result = new ArrayList<IModel<T>>(source);
 
-		// sort by date, most recent first
-		if (settings.isRecentFirst()) {
-			result.sort(Comparator.comparing(
-					(IModel<T> m) -> (m.getObject() instanceof Sentencia) ? ((Sentencia) m.getObject()).getFecha() : null,
-					Comparator.nullsLast(Comparator.reverseOrder())));
+		// filter by date range
+		if (this.dateRange != null && this.dateRange != DateRange.ALL) {
+			OffsetDateTime from = this.dateRange.getFrom(ZoneId.systemDefault());
+			if (from != null) {
+				result.removeIf(m -> {
+					if (!(m.getObject() instanceof RAGSentencia))
+						return false;
+					OffsetDateTime fecha = ((RAGSentencia) m.getObject()).getFecha();
+					return (fecha == null) || fecha.isBefore(from);
+				});
+			}
 		}
 
+		// filter by subject (materia). Documents with a null subject are only
+		// included when the selected option is SubjectOption.TODOS
+		if (this.subjectOption != null && this.subjectOption != SubjectOption.TODOS) {
+			result.removeIf(m -> {
+				if (!(m.getObject() instanceof RAGSentencia))
+					return false;
+				String subject = ((RAGSentencia) m.getObject()).getSubject();
+				return (subject == null) || !subject.equalsIgnoreCase(subjectOption.getLabel());
+			});
+		}
+
+		// sort by date, most recent first
+		if (this.orderOption==OrderOption.MAS_RECIENTES) {
+			result.sort(Comparator.comparing(
+					(IModel<T> m) -> (m.getObject() instanceof RAGSentencia) ? ((RAGSentencia) m.getObject()).getFecha() : null,
+					Comparator.nullsLast(Comparator.reverseOrder())));
+		}
+		else if	(this.orderOption==OrderOption.MAS_RELEVANTES) {
+			result.sort(Comparator.comparing(
+					(IModel<T> m) -> (m.getObject() instanceof RAGSentencia) ? ((RAGSentencia) m.getObject()).getScore() : null,
+					Comparator.nullsLast(Comparator.reverseOrder())));
+		}
+		/**
+		else if	(this.orderOption==OrderOption.MAYOR_COINCIDENCIA) {
+			result.sort(Comparator.comparing(
+					(IModel<T> m) -> (m.getObject() instanceof RAGSentencia) ? ((RAGSentencia) m.getObject()).getSemanticProximity() : null,
+					Comparator.nullsLast(Comparator.naturalOrder())));
+		}**/
+		 
+	
 		// keep only the first N results
-		int max = settings.getMaxSearchResults();
+		int max = this.totalOption.getMax();
 		if (max > 0 && result.size() > max)
 			result = new ArrayList<IModel<T>>(result.subList(0, max));
-
+		
 		return result;
 	}
 
@@ -144,11 +236,28 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 		return (TestQueriesService) ServiceLocator.getInstance().getBean(TestQueriesService.class);
 	}
 	
-	
 	protected KbeeRAGClient getRAGClient() {
 		return (KbeeRAGClient) ServiceLocator.getInstance().getBean(KbeeRAGClient.class);
 	}
-	
+
+	/**
+	 * Domain {@link io.demo.model.User} of the current session (resolved from
+	 * Spring Security and cached in the Wicket session). Pass this to the
+	 * services layer, which must never see Wicket types.
+	 */
+	protected java.util.Optional<io.demo.model.User> getSessionUser() {
+		return io.demo.web.WebSessionUser.get();
+	}
+
+	/** Session user, required (throws if nobody is signed in). */
+	protected io.demo.model.User requireSessionUser() {
+		return io.demo.web.WebSessionUser.require();
+	}
+
+	/** Id of the current web session, to pass to the services layer. */
+	protected String getSessionId() {
+		return io.demo.web.WebSessionUser.getSessionId();
+	}
 	
 	public void onBeforeRender() {
 		super.onBeforeRender();
@@ -163,8 +272,8 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 
 			@Override
 			public void onEvent(OrderOptionEvent event) {
-				logger.debug("onEvent: " + event.toString());
-				// TODO: update the panel with the new order
+				ResultsPanel.this.orderOption = event.getOption();
+				refresh(event.getTarget());
 			}
 		});
 
@@ -173,8 +282,8 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 
 			@Override
 			public void onEvent(DateRangeEvent event) {
-				logger.debug("onEvent: " + event.toString());
-				// TODO: update the panel with the new date range
+				ResultsPanel.this.dateRange = event.getOption();
+				refresh(event.getTarget());
 			}
 		});
 
@@ -183,8 +292,8 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 
 			@Override
 			public void onEvent(SubjectOptionEvent event) {
-				logger.debug("onEvent: " + event.toString());
-				// TODO: update the panel with the new subject
+				ResultsPanel.this.subjectOption = event.getOption();
+				refresh(event.getTarget());
 			}
 		});
 
@@ -193,10 +302,71 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 
 			@Override
 			public void onEvent(TotalOptionEvent event) {
-				logger.debug("onEvent: " + event.toString());
-				// TODO: update the panel with the new max results
+				ResultsPanel.this.totalOption = event.getOption();
+				refresh(event.getTarget());
 			}
 		});
+
+		add(new UIEventListener<QueryAnalysisEvent>() {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void onEvent(QueryAnalysisEvent event) {
+				ResultsPanel.this.showGeneralAnalysis(event.getTarget());
+			}
+		});
+	}
+
+	/**
+	 * Displays the {@link GeneralAnalysisPanel} with the query general analysis,
+	 * replacing the default {@link InvisiblePanel}. The analysis is obtained from
+	 * the {@link LegalSearchService} (saved with the query, or requested to the
+	 * RAG server).
+	 */
+	protected void showGeneralAnalysis(org.apache.wicket.ajax.AjaxRequestTarget target) {
+
+		try {
+			Query query = getQueryModel().getObject();
+
+			// obtain (and save with the query) the general analysis; by default
+			// the same llm used for the query
+			getLegalSearchService().queryAnalysis(query, null);
+
+			GeneralAnalysisPanel panel = new GeneralAnalysisPanel("generalanalysis", getQueryModel()) {
+				private static final long serialVersionUID = 1L;
+
+				@Override
+				protected void onClose(org.apache.wicket.ajax.AjaxRequestTarget target) {
+					generalAnalysisContainer.addOrReplace(new InvisiblePanel("generalanalysis"));
+					if (target != null)
+						target.add(generalAnalysisContainer);
+				}
+			};
+
+			generalAnalysisContainer.addOrReplace(panel);
+
+		} catch (Exception e) {
+			logger.error(e);
+			generalAnalysisContainer.addOrReplace(new ErrorPanel("generalanalysis", e));
+		}
+
+		if (target != null)
+			target.add(generalAnalysisContainer);
+	}
+
+	protected LegalSearchService getLegalSearchService() {
+		return (LegalSearchService) ServiceLocator.getInstance().getBean(LegalSearchService.class);
+	}
+
+	/**
+	 * Refreshes the results (list panel and toolbar total) after a
+	 * selection change in the toolbar.
+	 */
+	protected void refresh(org.apache.wicket.ajax.AjaxRequestTarget target) {
+		if (this.toolbar != null)
+			this.toolbar.setTotal(Integer.valueOf(getList().size()));
+		if (target != null)
+			target.add(contentsContainerContainer);
 	}
 	
 	
@@ -206,7 +376,11 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 		contentsContainerContainer = new WebMarkupContainer("contentsContainer");
 		contentsContainerContainer.setOutputMarkupId(true);
 		add(contentsContainerContainer);
-
+		
+		AlertPanel<Void> q=new AlertPanel<Void>("query", AlertPanel.PRIMARY, Model.of(queryModel.getObject().getInfo()));
+		contentsContainerContainer .add(q);
+		
+		
 		errorContainer = new WebMarkupContainer("errorContainer") {
 			private static final long serialVersionUID = 1L;
 
@@ -261,9 +435,43 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 			loadList();
 
 			
+			
+			UserSettingsService settings = getUserSettingsService();
+			if (settings.isRecentFirst())
+				this.orderOption = OrderOption.MAS_RECIENTES;
+			else
+				this.orderOption = OrderOption.MAS_RELEVANTES;
+
+			// keep the values received from the SearchForm; fall back to defaults
+			if (this.dateRange == null)
+				this.dateRange = DateRange.ALL;
+
+			if (this.subjectOption == null)
+				this.subjectOption = SubjectOption.TODOS;
+
+			if (this.reasoningEffortOption == null)
+				this.reasoningEffortOption = ReasoningEffortOption.getDefault();
+			
+			
 			this.toolbar = new ToolbarResults("toolbar", null);
-			this.toolbar.setTotal(Integer.valueOf(getList().size()));
+			this.toolbar.setOrderOption(this.orderOption);
+			this.toolbar.setDateRange(this.dateRange);
+			this.toolbar.setSubjectOption(this.subjectOption);
+			this.toolbar.setTotalOption(this.totalOption);
+			this.toolbar.setReasoningEffortOption(this.reasoningEffortOption);
+			
+			
+			List<IModel<T>> li=getList();
+			
+			this.toolbar.setTotal(Integer.valueOf(li.size()));
 			contentsContainerContainer.add(this.toolbar);
+			
+			// general analysis of the query: an InvisiblePanel until the
+			// user clicks the "Análisis" button in the toolbar
+			generalAnalysisContainer = new WebMarkupContainer("generalAnalysisContainer");
+			generalAnalysisContainer.setOutputMarkupId(true);
+			generalAnalysisContainer.add(new InvisiblePanel("generalanalysis"));
+			contentsContainerContainer.add(generalAnalysisContainer);
 			
 			
 			
@@ -343,9 +551,7 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 
 				protected void onClick(IModel<T> model) {
 				//	ResultsPanel.this.onClick(model);
-
 					logger.debug("onClick: " + model.getObject().toString());
-					
 				 }
 
 				//@Override
@@ -354,17 +560,21 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 				//}
 			};
 
+			this.panel.setBorder(false);
+			
 			this.panel.setHasExpander(true);
 			this.panel.setSettings(false);
 			this.panel.setToolbarVisible(false);
+			this.panel.setPageSize(this.totalOption.getMax());
 			
+				
 			//this.panel.setTitle(getListPanelLabel());
 			this.panel.setListPanelMode(ListPanelMode.TITLE_TEXT);
 
 			contentsContainerContainer.add(this.panel);
 
 			// feedback editor: the user evaluates the query results
-			contentsContainerContainer.add(new QueryFeedbackEditor("feedback", getQuery()));
+			contentsContainerContainer.add(new QueryFeedbackEditor("feedback", getQueryModel()));
 
 		} catch (Exception e) {
 			logger.error(e);
@@ -381,12 +591,14 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 	protected Panel getObjectListItemExpandedPanel(IModel<T> model, ListPanelMode mode) {
 		// displays the Analysis and Quotes of the document according to the
 		// user's preferences (UserSettingsService)
-	
-		
-		
-		
-		return new AnalysisPanel<T>("expanded-panel", model, getQuery());
+		return new AnalysisPanel<T>("expanded-panel", model, getQueryModel());
 	}
+
+	private IModel<Query> getQueryModel() {
+		// TODO Auto-generated method stub
+		return this.queryModel;
+	}
+
 
 	protected String getObjectTitleIcon(IModel<T> model) {
 		// TODO Auto-generated method stub
@@ -400,7 +612,7 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 		
 		if (model.getObject().getPjsfDocumentId()!=null) {
 			String id=	model.getObject().getPjsfDocumentId();	
-			boolean  b= getTestQueriesService().check(getQuery(), id);
+			boolean  b= getTestQueriesService().check(getQueryModel().getObject().getQuery(), id);
 			return Model.of( title + (b ? " <span class=\"badge bg-warning\">#</span>" : "") );
 			
 		}
@@ -408,20 +620,24 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 			
 			return new Model<String>(model.getObject().getTitle());
 		}
-		 
-		
-		
 		
 	}
 
 
-	protected void onClick(IModel<T> model) {
-
-		
-		String base= "https://portal.justiciasantafe.gov.ar/bdj/index.php?pg=bus&m=busqueda&c=busqueda&a=get&id="; //53492
 	
+	public Settings getSettingsService() {
+		return (Settings) ServiceLocator.getInstance().getBean(Settings.class);
+	}
+
+	
+	protected void onClick(IModel<T> model) {
+		
+		String base=  getSettingsService().getBasePJSFUrl();
+		
+		//t"https://portal.justiciasantafe.gov.ar/bdj/index.php?pg=bus&m=busqueda&c=busqueda&a=get&id="; //53492
 		
 		if (model.getObject().getPjsfDocumentId()!=null) {
+			//logger.debug(base+model.getObject().getPjsfDocumentId());
 			setResponsePage(new RedirectPage(base+model.getObject().getPjsfDocumentId()));
 			
 		}
@@ -429,9 +645,9 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 			logger.error("ragDocumentId is null for " + model.getObject().getTitle());
 		}
 		
-		
-		
 	}
+
+	
 
 	protected String getObjectImageSrc(IModel<T> model) {
 		// TODO Auto-generated method stub
@@ -439,7 +655,7 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 	}
 
 	protected IModel<String> getObjectSubtitle(IModel<T> model) {
-		logger.debug("getObjectSubtitle: " + model.getObject().getSubtitle());
+		//logger.debug("getObjectSubtitle: " + model.getObject().getSubtitle());
 		return Model.of( model.getObject().getSubtitle() );
 	}
 
@@ -451,6 +667,13 @@ public class ResultsPanel<T extends Documento> extends BasePanel {
 	protected WebMarkupContainer getObjectMenu(IModel<T> model) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+
+	public void setQueryModel(ObjectModel<Query> objectModel) {
+
+			this.queryModel = objectModel;
+			
 	}
 	
 	

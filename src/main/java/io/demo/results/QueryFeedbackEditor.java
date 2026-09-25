@@ -47,9 +47,7 @@ public class QueryFeedbackEditor extends BasePanel {
 	}
 
 	private State state = State.CLOSED;
-
-	/** the query text whose results the user is evaluating */
-	private final String query;
+ 
 
 	private QueryFeedbackGrade grade;
 	private String info;
@@ -60,10 +58,27 @@ public class QueryFeedbackEditor extends BasePanel {
 	private WebMarkupContainer successContainer;
 	private Label errorLabel;
 
-	public QueryFeedbackEditor(String id, String query) {
+	private IModel<Query> queryModel = null;
+	
+	
+	public QueryFeedbackEditor(String id, IModel<Query> queryModel) {
 		super(id);
-		this.query = query;
+		this.queryModel = queryModel;
 	}
+	
+	@Override
+	public void onDetach() {
+		super.onDetach();
+		
+		 
+		
+		if (queryModel != null)
+			queryModel.detach();
+		
+		
+	}
+
+	
 
 	@Override
 	public void onInitialize() {
@@ -194,6 +209,7 @@ public class QueryFeedbackEditor extends BasePanel {
 		try {
 			QueryFeedback feedback = new QueryFeedback();
 
+			/**
 			Query queryEntity = getQueryDBService().getMostRecentByText(query);
 			if (queryEntity == null)
 				throw new IllegalStateException("no se encontró la consulta -> " + query);
@@ -208,8 +224,11 @@ public class QueryFeedbackEditor extends BasePanel {
 			feedback.setCreated(OffsetDateTime.now());
 			feedback.setLastModified(OffsetDateTime.now());
 			feedback.setLastModifiedUser(user);
-
+ 
+			
 			getQueryFeedbackDBService().save(feedback, user);
+			*/
+			
 
 			state = State.SAVED;
 			errorLabel.setDefaultModelObject("");

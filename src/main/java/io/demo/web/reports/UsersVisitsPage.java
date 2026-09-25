@@ -31,6 +31,7 @@ import io.demo.model.db.service.StatDBService;
 import io.demo.service.DateTimeService;
 import io.demo.service.ServiceLocator;
 import io.demo.web.page.DemoBasePage;
+import io.demo.web.panel.PageHeaderPanel;
 import io.demo.web.panel.SimpleHeaderPanel;
 import io.wktui.error.ErrorPanel;
 import io.wktui.nav.breadcrumb.BreadCrumb;
@@ -136,9 +137,9 @@ public class UsersVisitsPage extends DemoBasePage {
 			bc.addElement(new io.wktui.nav.breadcrumb.BCElement( Model.of("visitas")));
 					
 
-			SimpleHeaderPanel ph = new SimpleHeaderPanel("page-header", getOptionalSessionUserModel());
+			PageHeaderPanel<User> ph = new PageHeaderPanel<User>("page-header", getSessionUserModel(), Model.of("Visitas"));
 			ph.setBreadCrumb(bc);
-
+		
 			// bc.addElement(new BCElement(new
 			// Model<String>(getModel().getObject().getDisplayname())));
 			// JumboPageHeaderPanel<Candidate> ph = new
@@ -274,5 +275,11 @@ public class UsersVisitsPage extends DemoBasePage {
 		public String getTimestamp() {
 			return timestamp;
 		}
+	}
+
+	@Override
+	protected void addListeners() {
+		// TODO Auto-generated method stub
+		
 	}
 }
