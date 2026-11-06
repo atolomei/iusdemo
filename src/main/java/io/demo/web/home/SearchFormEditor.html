@@ -60,6 +60,8 @@
 										<div class="mt-0 col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12 mb-2">
 											<a href="#" style="float: left;" class="mb-0 mt-2 d-inline-block" wicket:id="toggleHistory"><span
 												wicket:id="toggleHistoryLabel">ver consultas recientes</span></a>
+											<a href="#" style="float: left;" class="mb-0 mt-2 ms-4 d-inline-block" wicket:id="toggleServerHistory"><span
+												wicket:id="toggleServerHistoryLabel">ver consultas recientes (servidor)</span></a>
 											<div style="float: right;" class="mb-0 mt-0 mr-0 f-e" wicket:id="send"></div>
 										</div>
 									</div>
@@ -83,6 +85,23 @@
 							</div>
 
 							<div wicket:id="history"></div>
+						</div>
+					</div>
+
+					<div wicket:id="serverHistoryContainer" class="row">
+						<div class="mt-2 col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12 mb-2">
+							<h3 style="font-size: 1em; font-weight: bold; text-transform: uppercase;">Consultas recientes</h3>
+							<ul class="nav nav-tabs mb-2">
+								<li class="nav-item"><a href="#" class="nav-link" wicket:id="tabAll">Todas</a></li>
+								<li class="nav-item"><a href="#" class="nav-link" wicket:id="tabMine">Mis consultas</a></li>
+							</ul>
+							<span class="text-muted" wicket:id="serverEmpty"></span>
+							<ul class="list-group">
+								<li class="list-group-item border-0 bg-light ps-0" wicket:id="serverItems">
+									<a href="#" wicket:id="serverItemLink"><span wicket:id="serverItemText"></span></a>
+									<small class="text-muted ms-2" wicket:id="serverItemInfo"></small>
+								</li>
+							</ul>
 						</div>
 					</div>
 				</div>

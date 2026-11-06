@@ -72,6 +72,21 @@ public class SearchFormEditor extends ObjectEditor<String> {
 	/** Whether the history section is expanded. Collapsed by default. */
 	private boolean historyVisible = false;
 
+	/** Container of the recent queries saved on the RAG server (collapsed by default). */
+	private WebMarkupContainer serverHistoryContainer;
+
+	private boolean serverHistoryVisible = false;
+
+	/** true -> "Mis consultas" tab, false -> "Todas" tab */
+	private boolean serverMineTab = false;
+
+	/** recent queries from the RAG server, as light serializable items */
+	private List<ServerQueryItem> serverItems = new ArrayList<>();
+
+	/** Light view of a {@link io.demo.service.rag.SearchAuditResponse}, safe to keep in the session. */
+	private record ServerQueryItem(String question, String user, String date, String result) implements java.io.Serializable {
+	}
+
 	/** toolbar selections passed to the ResultsPanel with the SearchEvent */
 	private DateRange dateRange = DateRange.getDefault();
 	private SubjectOption subjectOption = SubjectOption.getDefault();
@@ -272,6 +287,72 @@ public class SearchFormEditor extends ObjectEditor<String> {
 		}));
 		getForm().add(toggleHistory);
 
+		// ---- recent queries saved on the RAG server (2 tabs) ----
+
+		this.serverHistoryContainer = new WebMarkupContainer("serverHistoryContainer") {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public boolean isVisible() {
+				return serverHistoryVisible;
+			}
+		};
+		this.serverHistoryContainer.setOutputMarkupPlaceholderTag(true);
+		add(this.serverHistoryContainer);
+
+		this.serverHistoryContainer.add(newServerTab("tabAll", false));
+		this.serverHistoryContainer.add(newServerTab("tabMine", true));
+
+		this.serverHistoryContainer.add(new Label("serverEmpty", "No hay consultas recientes") {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public boolean isVisible() {
+				return serverItems.isEmpty();
+			}
+		});
+
+		this.serverHistoryContainer.add(new org.apache.wicket.markup.html.list.ListView<ServerQueryItem>("serverItems", (IModel<List<ServerQueryItem>>) () -> serverItems) {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			protected void populateItem(org.apache.wicket.markup.html.list.ListItem<ServerQueryItem> item) {
+				final ServerQueryItem q = item.getModelObject();
+				org.apache.wicket.markup.html.link.Link<Void> link = new org.apache.wicket.markup.html.link.Link<Void>("serverItemLink") {
+					private static final long serialVersionUID = 1L;
+
+					@Override
+					public void onClick() {
+						SearchFormEditor.this.onSearchServerHistory(q.question());
+					}
+				};
+				link.add(new Label("serverItemText", q.question()));
+				item.add(link);
+				item.add(new Label("serverItemInfo", q.date() + (q.user() != null ? " - " + q.user() : "") + (q.result() != null && !"SUCCESS".equals(q.result()) ? " - " + q.result() : "")));
+			}
+		});
+
+		AjaxLink<Void> toggleServerHistory = new AjaxLink<Void>("toggleServerHistory") {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void onClick(AjaxRequestTarget target) {
+				serverHistoryVisible = !serverHistoryVisible;
+				if (serverHistoryVisible)
+					loadServerItems();
+				target.add(SearchFormEditor.this);
+			}
+		};
+		toggleServerHistory.add(new Label("toggleServerHistoryLabel", new Model<String>() {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public String getObject() {
+				return serverHistoryVisible ? "cerrar consultas recientes (servidor)" : "ver consultas recientes (servidor)";
+			}
+		}));
+		getForm().add(toggleServerHistory);
+
 		edit();
 
 		form.updateModel();
@@ -285,6 +366,49 @@ public class SearchFormEditor extends ObjectEditor<String> {
 
 		;
 
+	}
+
+	/** Creates a tab link ("Todas" / "Mis consultas") of the server history panel. */
+	private AjaxLink<Void> newServerTab(String id, final boolean mine) {
+		AjaxLink<Void> tab = new AjaxLink<Void>(id) {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void onClick(AjaxRequestTarget target) {
+				serverMineTab = mine;
+				loadServerItems();
+				target.add(SearchFormEditor.this);
+			}
+		};
+		tab.add(org.apache.wicket.behavior.AttributeAppender.append("class", (IModel<String>) () -> (serverMineTab == mine) ? "active" : ""));
+		return tab;
+	}
+
+	/** Loads the recent queries from the RAG server for the selected tab. */
+	private void loadServerItems() {
+
+		int max = getUserSettingsService().getMaxHistory();
+
+		io.demo.service.LegalSearchService service = (io.demo.service.LegalSearchService) ServiceLocator.getInstance().getBean(io.demo.service.LegalSearchService.class);
+
+		List<io.demo.service.rag.SearchAuditResponse> list = serverMineTab ? service.getMyRecentServerQueries(max) : service.getRecentServerQueries(max);
+
+		java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+		List<ServerQueryItem> items = new ArrayList<>();
+		for (io.demo.service.rag.SearchAuditResponse r : list) {
+			if (r.question() == null || r.question().isBlank())
+				continue;
+			String date = r.startedAt() != null ? r.startedAt().atZoneSameInstant(java.time.ZoneId.systemDefault()).format(fmt) : "";
+			items.add(new ServerQueryItem(r.question(), r.userId(), date, r.result() != null ? r.result().name() : null));
+		}
+		this.serverItems = items;
+	}
+
+	protected void onSearchServerHistory(String question) {
+		PageParameters params = new PageParameters();
+		params.add("query", question);
+		setResponsePage(new DemoHomePage(params));
 	}
 
 	private List<IModel<io.demo.model.Query>> getHistoryModel() {

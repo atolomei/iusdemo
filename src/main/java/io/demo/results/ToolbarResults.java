@@ -16,6 +16,8 @@ import io.demo.model.User;
 import io.demo.web.event.DateRangeEvent;
 import io.demo.web.event.OrderOptionEvent;
 import io.demo.web.event.QueryAnalysisEvent;
+import io.demo.web.event.QueryLevelOptionEvent;
+import io.demo.web.event.SendResultsEmailEvent;
 import io.demo.web.event.SubjectOptionEvent;
 import io.demo.web.event.TotalOptionEvent;
 import wktui.base.ModelPanel;
@@ -36,6 +38,8 @@ public class ToolbarResults extends ModelPanel<User> {
 
 	/** current selections (defaults can be changed via the setters) */
 	private OrderOption orderOption = OrderOption.getDefault();
+	/** null means "TODOS" */
+	private QueryLevelOption queryLevelOption = null;
 	private DateRange dateRange = DateRange.getDefault();
 	private SubjectOption subjectOption = SubjectOption.getDefault();
 	private TotalOption totalOption = TotalOption.getDefault();
@@ -58,6 +62,14 @@ public class ToolbarResults extends ModelPanel<User> {
 
 	public OrderOption getOrderOption() {
 		return this.orderOption;
+	}
+
+	public void setQueryLevelOption(QueryLevelOption option) {
+		this.queryLevelOption = option;
+	}
+
+	public QueryLevelOption getQueryLevelOption() {
+		return this.queryLevelOption;
 	}
 
 	public void setDateRange(DateRange option) {
@@ -113,10 +125,7 @@ public class ToolbarResults extends ModelPanel<User> {
 		add(container);
 
 		// order selector
-		DropDownChoice<OrderOption> order = new DropDownChoice<OrderOption>("order",
-				new PropertyModel<OrderOption>(this, "orderOption"),
-				Arrays.asList(OrderOption.values()),
-				new ChoiceRenderer<OrderOption>("label"));
+		DropDownChoice<OrderOption> order = new DropDownChoice<OrderOption>("order", new PropertyModel<OrderOption>(this, "orderOption"), Arrays.asList(OrderOption.values()), new ChoiceRenderer<OrderOption>("label"));
 
 		order.add(new AjaxFormComponentUpdatingBehavior("change") {
 			private static final long serialVersionUID = 1L;
@@ -128,11 +137,29 @@ public class ToolbarResults extends ModelPanel<User> {
 		});
 		container.add(order);
 
+		// query level selector; a null selection means "TODOS" (default)
+		DropDownChoice<QueryLevelOption> queryLevel = new DropDownChoice<QueryLevelOption>("querylevel", new PropertyModel<QueryLevelOption>(this, "queryLevelOption"), Arrays.asList(QueryLevelOption.values()),
+				new ChoiceRenderer<QueryLevelOption>("label")) {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			protected String getNullValidDisplayValue() {
+				return "Todos";
+			}
+		};
+		queryLevel.setNullValid(true);
+		queryLevel.add(new AjaxFormComponentUpdatingBehavior("change") {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			protected void onUpdate(AjaxRequestTarget target) {
+				fireScanAll(new QueryLevelOptionEvent(getQueryLevelOption(), target));
+			}
+		});
+		container.add(queryLevel);
+
 		// date range selector (read-only: value comes from the SearchForm)
-		DropDownChoice<DateRange> dates = new DropDownChoice<DateRange>("daterange",
-				new PropertyModel<DateRange>(this, "dateRange"),
-				Arrays.asList(DateRange.values()),
-				new ChoiceRenderer<DateRange>("label")) {
+		DropDownChoice<DateRange> dates = new DropDownChoice<DateRange>("daterange", new PropertyModel<DateRange>(this, "dateRange"), Arrays.asList(DateRange.values()), new ChoiceRenderer<DateRange>("label")) {
 			private static final long serialVersionUID = 1L;
 
 			@Override
@@ -143,10 +170,7 @@ public class ToolbarResults extends ModelPanel<User> {
 		container.add(dates);
 
 		// subject selector (read-only: value comes from the SearchForm)
-		DropDownChoice<SubjectOption> subject = new DropDownChoice<SubjectOption>("subject",
-				new PropertyModel<SubjectOption>(this, "subjectOption"),
-				Arrays.asList(SubjectOption.values()),
-				new ChoiceRenderer<SubjectOption>("label")) {
+		DropDownChoice<SubjectOption> subject = new DropDownChoice<SubjectOption>("subject", new PropertyModel<SubjectOption>(this, "subjectOption"), Arrays.asList(SubjectOption.values()), new ChoiceRenderer<SubjectOption>("label")) {
 			private static final long serialVersionUID = 1L;
 
 			@Override
@@ -157,9 +181,7 @@ public class ToolbarResults extends ModelPanel<User> {
 		container.add(subject);
 
 		// reasoning level selector (read-only: value comes from the SearchForm)
-		DropDownChoice<ReasoningEffortOption> reasoning = new DropDownChoice<ReasoningEffortOption>("reasoninglevel",
-				new PropertyModel<ReasoningEffortOption>(this, "reasoningEffortOption"),
-				Arrays.asList(ReasoningEffortOption.values()),
+		DropDownChoice<ReasoningEffortOption> reasoning = new DropDownChoice<ReasoningEffortOption>("reasoninglevel", new PropertyModel<ReasoningEffortOption>(this, "reasoningEffortOption"), Arrays.asList(ReasoningEffortOption.values()),
 				new ChoiceRenderer<ReasoningEffortOption>("label")) {
 			private static final long serialVersionUID = 1L;
 
@@ -172,38 +194,44 @@ public class ToolbarResults extends ModelPanel<User> {
 
 		// "Análisis" button: fires the QueryAnalysisEvent so the ResultsPanel
 		// displays the general analysis of the query
-		container.add(new org.apache.wicket.ajax.markup.html.AjaxLink<Void>("analysis") {
+		/**container.add(new org.apache.wicket.ajax.markup.html.AjaxLink<Void>("analysis") {
 			private static final long serialVersionUID = 1L;
 
 			@Override
 			public void onClick(AjaxRequestTarget target) {
 				fireScanAll(new QueryAnalysisEvent(target));
 			}
-		});
-/**
-		// max results selector (read-only: value comes from the SearchForm)
-		DropDownChoice<TotalOption> max = new DropDownChoice<TotalOption>("maxresults",
-				new PropertyModel<TotalOption>(this, "totalOption"),
-				Arrays.asList(TotalOption.values()),
-				new ChoiceRenderer<TotalOption>("label")) {
+		});**/
+		
+
+		// "Enviar por email" button: fires the SendResultsEmailEvent so the
+		// ResultsPanel displays the send-by-email form
+		container.add(new org.apache.wicket.ajax.markup.html.AjaxLink<Void>("sendEmail") {
 			private static final long serialVersionUID = 1L;
 
 			@Override
-			public boolean isEnabled() {
-				return false;
+			public void onClick(AjaxRequestTarget target) {
+				fireScanAll(new SendResultsEmailEvent(target));
 			}
+		});
 
-			@Override
-			public boolean isVisible() {
-				return false;
-			}
-
-			
-		};
-		container.add(max);
-		*
-		*/
-		
+		/**
+		 * // max results selector (read-only: value comes from the SearchForm)
+		 * DropDownChoice<TotalOption> max = new
+		 * DropDownChoice<TotalOption>("maxresults", new
+		 * PropertyModel<TotalOption>(this, "totalOption"),
+		 * Arrays.asList(TotalOption.values()), new
+		 * ChoiceRenderer<TotalOption>("label")) { private static final long
+		 * serialVersionUID = 1L;
+		 * 
+		 * @Override public boolean isEnabled() { return false; }
+		 * 
+		 * @Override public boolean isVisible() { return false; }
+		 * 
+		 * 
+		 *           }; container.add(max);
+		 *
+		 */
 
 		// total number of results (like ListPanelToolbar)
 		this.totalLabel = new Label("total", new Model<String>() {

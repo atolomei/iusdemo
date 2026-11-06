@@ -10,8 +10,8 @@ import io.demo.model.RAGSentencia;
  *
  * <p>
  * The new REST API returns the {@code sources} already ranked by relevance
- * (descending {@code score}), so the conversion is a straightforward mapping
- * of each {@link Source} to a {@link RAGSentencia}.
+ * (descending {@code score}), so the conversion is a straightforward mapping of
+ * each {@link Source} to a {@link RAGSentencia}.
  * </p>
  */
 public class RAGConverter {
@@ -56,6 +56,9 @@ public class RAGConverter {
 			sentencia.setId(source.documentId());
 			sentencia.setRagDocumentId(source.documentId());
 
+			
+			sentencia.setStance(source.stance());
+			
 			String s = source.documentId();
 			String arr[] = s.split("-");
 
@@ -68,6 +71,11 @@ public class RAGConverter {
 			sentencia.setTitle(source.documentTitle());
 			sentencia.setFecha(source.documentDate());
 			sentencia.setScore(source.score());
+			
+			if (source.level()!=null && (source.level()>= 0)) {
+				sentencia.setQueryLevel(source.level()-1);
+			}
+			
 			sentencia.setRelevanceOrder(result.size());
 			sentencia.setTribunal("Corte Suprema de Justicia de Santa Fe");
 			result.add(sentencia);

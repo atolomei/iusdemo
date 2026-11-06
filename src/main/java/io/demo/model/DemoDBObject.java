@@ -2,8 +2,6 @@ package io.demo.model;
 
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
 
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
@@ -84,11 +82,9 @@ public class DemoDBObject extends DemoObject implements Identifiable, Auditable 
 	@Enumerated(EnumType.ORDINAL)
 	private ObjectState state;
 
-	
 	@Transient
 	private boolean dependecies = false;
 
-	
 	public boolean isDependencies() {
 		return dependecies;
 	}
@@ -97,8 +93,6 @@ public class DemoDBObject extends DemoObject implements Identifiable, Auditable 
 		this.dependecies = b;
 	}
 
-	
-	
 	@Override
 	public String getTitle() {
 		return name;
@@ -108,5 +102,4 @@ public class DemoDBObject extends DemoObject implements Identifiable, Auditable 
 		return df;
 	}
 
-	
 }

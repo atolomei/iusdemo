@@ -18,6 +18,7 @@ import org.apache.wicket.model.Model;
 import org.apache.wicket.model.PropertyModel;
 
 import io.demo.Logger;
+import io.demo.model.ObjectState;
 import io.demo.model.Query;
 import io.demo.model.QueryFeedback;
 import io.demo.model.QueryFeedbackGrade;
@@ -207,28 +208,24 @@ public class QueryFeedbackEditor extends BasePanel {
 
 	protected void onSave(AjaxRequestTarget target) {
 		try {
-			QueryFeedback feedback = new QueryFeedback();
-
-			/**
-			Query queryEntity = getQueryDBService().getMostRecentByText(query);
-			if (queryEntity == null)
-				throw new IllegalStateException("no se encontró la consulta -> " + query);
+			Query query = (queryModel != null) ? queryModel.getObject() : null;
+			if (query == null)
+				throw new IllegalStateException("no se encontró la consulta");
 
 			User user = getSessionUser();
 			if (user == null)
 				throw new IllegalStateException("no hay un usuario en la sesión");
 
-			feedback.setQuery(queryEntity);
+			QueryFeedback feedback = new QueryFeedback();
+			feedback.setQuery(query);
 			feedback.setGradeEnum(grade);
 			feedback.setInfo(info);
 			feedback.setCreated(OffsetDateTime.now());
 			feedback.setLastModified(OffsetDateTime.now());
 			feedback.setLastModifiedUser(user);
- 
-			
+			feedback.setState(ObjectState.PUBLISHED);
+
 			getQueryFeedbackDBService().save(feedback, user);
-			*/
-			
 
 			state = State.SAVED;
 			errorLabel.setDefaultModelObject("");

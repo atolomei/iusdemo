@@ -63,6 +63,28 @@ public class PJSFSentenciaParserService extends BaseService {
 		return sentencia;
 	}
 
+	/** marker of the PJSF error page for a non-existing fallo */
+	private static final String NOT_FOUND_MARKER = "El fallo solicitado no existe";
+
+	/**
+	 * Parses the (plain) text of a PJSF document previously downloaded to the
+	 * file system and returns the resulting {@link PJSFSentencia} (not saved),
+	 * or {@code null} if the text is the PJSF "fallo no existe" error page.
+	 */
+	public PJSFSentencia parseFile(String sid, String text) {
+
+		Check.requireNonNull(sid, "sid is null");
+		Check.requireNonNull(text, "text is null");
+
+		if (text.contains(NOT_FOUND_MARKER))
+			return null;
+
+		PJSFSentencia sentencia = parse(text);
+		sentencia.setDocumentoId(sid);
+		sentencia.setName("pjsf-sentencia-" + sid);
+		return sentencia;
+	}
+
 	/**
 	 * Retrieves the raw text of the document from the PJSF portal.
 	 */
@@ -183,12 +205,19 @@ public class PJSFSentenciaParserService extends BaseService {
 				if (current != null)
 					result.add(current);
 
+				// the fallo files downloaded to the file system have the whole
+				// sumario (materia + voces + title + text) on a single line
+				if (isSingleLineSumario(trimmed)) {
+					current = parseSingleLineSumario(trimmed);
+					continue;
+				}
+
 				current = new PJSFSumario();
 				current.setVoces(new ArrayList<>());
 
 				StringBuilder title = new StringBuilder();
 				StringBuilder texto = new StringBuilder();
-				boolean titleFound = false;
+				boolean vocesSeen = false;
 
 				for (String line : trimmed.split("\\n")) {
 					String l = line.strip();
@@ -197,13 +226,16 @@ public class PJSFSentenciaParserService extends BaseService {
 					if (l.startsWith("Tesauro")) {
 						String voz = l.replaceFirst("^Tesauro\\s*>\\s*", "");
 						current.getVoces().add(voz.trim());
-					} else if (!titleFound && l.equals(l.toUpperCase())) {
-						// materia line (e.g. "CONSTITUCIONAL - PENAL") or title line (ends with '.')
-						if (l.endsWith(".")) {
-							title.append(l);
-							titleFound = true;
+						vocesSeen = true;
+					} else if (l.equals(l.toUpperCase()) && texto.length() == 0) {
+						if (!vocesSeen) {
+							// materia line (e.g. "CONSTITUCIONAL - PENAL"): ignored (it is also in the voces)
+							continue;
 						}
-						// otherwise it is the materia line: ignored (it is also in the voces)
+						// title line(s): uppercase lines right after the voces, before the text
+						if (title.length() > 0)
+							title.append(" ");
+						title.append(l);
 					} else {
 						texto.append(l).append("\n");
 					}
@@ -223,6 +255,128 @@ public class PJSFSentenciaParserService extends BaseService {
 			result.add(current);
 
 		return result;
+	}
+
+	/**
+	 * The fallo files downloaded to the file system have the whole sumario
+	 * (materia + voces + title + text) concatenated on a single line, unlike
+	 * the on-demand fetch where {@link #stripHtml(String)} generates one line
+	 * per element.
+	 */
+	protected boolean isSingleLineSumario(String block) {
+		String firstLine = block.split("\\n", 2)[0];
+		// on the multi-line format the "Tesauro >" voces are on their own lines
+		return firstLine.contains("Tesauro >") && !firstLine.strip().startsWith("Tesauro");
+	}
+
+	/**
+	 * Parses a sumario concatenated on a single line:
+	 *
+	 * <pre>
+	 * MATERIA(S)Tesauro > VOZ &gt; SUBVOZ Tesauro > VOZ ... TITLE. IN UPPERCASE.Text of the sumario ...
+	 * </pre>
+	 *
+	 * The voces are extracted from the "Tesauro >" segments; the body text
+	 * starts at the first lowercase word; the uppercase title between the last
+	 * voz and the text is separated using the thesaurus terms of the voces.
+	 */
+	protected PJSFSumario parseSingleLineSumario(String line) {
+
+		PJSFSumario sumario = new PJSFSumario();
+		sumario.setVoces(new ArrayList<>());
+
+		String text = line.replace("\n", " ").strip();
+
+		// drop the materia prefix (before the first "Tesauro")
+		int first = text.indexOf("Tesauro");
+		String rest = text.substring(first);
+
+		// split into "Tesauro > ..." segments
+		String[] segments = rest.split("Tesauro\\s*>\\s*");
+
+		// the body text starts at the first word containing a lowercase letter
+		String lastSegment = segments[segments.length - 1];
+		int textStart = findTextStart(lastSegment);
+		String texto = textStart >= 0 ? lastSegment.substring(textStart).strip() : "";
+		String upper = (textStart >= 0 ? lastSegment.substring(0, textStart) : lastSegment).strip();
+
+		// voces (all but the tail of the last segment)
+		for (int i = 1; i < segments.length - 1; i++)
+			sumario.getVoces().add(normalizeVoz(segments[i]));
+
+		// the "upper" zone is: last voz + title sentences separated by ". ".
+		// the first '.'-delimited piece mixes the last voz with the first title
+		// sentence; the following pieces belong to the title.
+		StringBuilder title = new StringBuilder();
+		int dot = upper.indexOf('.');
+		String mixed = dot >= 0 ? upper.substring(0, dot) : upper;
+		String titleTail = dot >= 0 ? upper.substring(dot + 1).strip() : "";
+
+		// separate the last voz from the first title sentence using the
+		// thesaurus terms already seen in the voces
+		String[] split = splitVozAndTitle(mixed, sumario.getVoces());
+		if (!split[0].isBlank())
+			sumario.getVoces().add(normalizeVoz(split[0]));
+		if (!split[1].isBlank())
+			title.append(split[1].strip()).append(".");
+		if (!titleTail.isBlank()) {
+			if (title.length() > 0)
+				title.append(" ");
+			title.append(titleTail);
+		}
+
+		sumario.setTitle(title.length() > 0 ? title.toString() : null);
+		sumario.setTexto(texto);
+		return sumario;
+	}
+
+	/** index where the body text starts: beginning of the first word containing a lowercase letter, or -1 */
+	private int findTextStart(String s) {
+		for (int i = 0; i < s.length(); i++) {
+			if (Character.isLowerCase(s.charAt(i))) {
+				// back up to the start of the word
+				int start = i;
+				while (start > 0 && Character.isLetter(s.charAt(start - 1)))
+					start--;
+				return start;
+			}
+		}
+		return -1;
+	}
+
+	/**
+	 * Splits "LAST VOZ FIRST TITLE SENTENCE" using the thesaurus terms of the
+	 * previous voces: the longest suffix equal to a known term is the first
+	 * title sentence. Returns {voz, titleSentence}.
+	 */
+	private String[] splitVozAndTitle(String mixed, List<String> voces) {
+		String m = mixed.strip();
+		List<String> terms = new ArrayList<>();
+		for (String voz : voces)
+			for (String t : voz.split(">"))
+				terms.add(t.strip());
+		String bestVoz = m;
+		String bestTitle = "";
+		int bestLen = -1;
+		for (String term : terms) {
+			if (term.isEmpty())
+				continue;
+			// the term must match a suffix of the mixed piece (word boundary)
+			if (m.endsWith(term) && term.length() > bestLen) {
+				int cut = m.length() - term.length();
+				if (cut == 0 || !Character.isLetter(m.charAt(cut - 1))) {
+					bestVoz = m.substring(0, cut).strip();
+					bestTitle = term;
+					bestLen = term.length();
+				}
+			}
+		}
+		return new String[] { bestVoz, bestTitle };
+	}
+
+	/** normalizes a voz: collapses whitespace around the '>' separators */
+	private String normalizeVoz(String voz) {
+		return voz.replaceAll("\\s+", " ").replaceAll("\\s*>\\s*", " > ").strip();
 	}
 
 	/**

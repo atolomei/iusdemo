@@ -8,11 +8,12 @@ import java.util.Locale;
 
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Configuration;import com.github.benmanes.caffeine.cache.Caffeine;
+import org.springframework.context.annotation.Configuration;
 
 import io.demo.Logger;
-import jakarta.annotation.PostConstruct;
- ;
+import io.demo.results.DateRange;
+import io.demo.results.ReasoningEffortOption;
+import jakarta.annotation.PostConstruct;;
 
 /**
  * <p>
@@ -20,12 +21,10 @@ import jakarta.annotation.PostConstruct;
  * </p>
  * 
  * @author atolomei@novamens.com (Alejandro Tolomei)
- * 
  */
 @Configuration
 public class Settings {
 
-	
 	@SuppressWarnings("unused")
 	static private Logger logger = Logger.getLogger(Settings.class.getName());
 
@@ -105,44 +104,6 @@ public class Settings {
 	@Value("${google.translate.credentials:}")
 	private String googleTranslateAuthPath;
 
-	/** PDF SETTINGS -------------------------------------------------------- */
-
-	@Value("${pdf.page.width:612}")
-	protected float pageWidth;
-
-	@Value("${pdf.page.height:792}")
-	protected float pageHeight;
-
-	@Value("${pdf.margin.top:72}")
-	protected float marginTop;
-
-	@Value("${pdf.margin.bottom:72}")
-	protected float marginBottom;
-
-	@Value("${pdf.margin.left:72}")
-	protected float marginLeft;
-
-	@Value("${pdf.margin.right:72}")
-	protected float marginRight;
-
-	@Value("${pdf.font.size.body:12}")
-	protected float fontSizeBody;
-
-	@Value("${pdf.font.size.title:24}")
-	protected float fontSizeTitle;
-
-	@Value("${pdf.font.size.chapter:18}")
-	protected float fontSizeChapter;
-
-	@Value("${pdf.font.size.section:14}")
-	protected float fontSizeSection;
-
-	@Value("${pdf.font.size.footer:9}")
-	protected float fontSizeFooter;
-
-	@Value("${pdf.line.spacing:1.5}")
-	protected float lineSpacing;
-
 	/** KBEE RAG SERVER ------------------------------------------------------ */
 
 	@Value("${kbee.rag.url:http://localhost}")
@@ -174,9 +135,16 @@ public class Settings {
 	@Value("${testqueries.dir:work/testqueries}")
 	protected String testQueriesDir;
 
+	/** Directory containing the PJSF fallos downloaded to the file system. */
+	@Value("${pjsf.fallos.dir:fallos}")
+	protected String fallosDir;
+
 	/** REGRESSION TEST ------------------------------------------------------ */
 
-	/** When {@code true} the regression test is executed on startup and the JVM exits when done. */
+	/**
+	 * When {@code true} the regression test is executed on startup and the JVM
+	 * exits when done.
+	 */
 	@Value("${regressiontest.enabled:false}")
 	protected String regressionTestEnabledStr;
 
@@ -185,8 +153,8 @@ public class Settings {
 	protected String regressionTestDir;
 
 	/**
-	 * Comma-separated list of reasoning effort keys to test (low, medium,
-	 * high, xhigh). Empty -> all options.
+	 * Comma-separated list of reasoning effort keys to test (low, medium, high,
+	 * xhigh). Empty -> all options.
 	 */
 	@Value("${regressiontest.efforts:}")
 	protected String regressionTestEfforts;
@@ -215,55 +183,86 @@ public class Settings {
 
 	/** ---------------------------------------------------------------------- */
 
-	
 	@Value("${help.dir:help}")
 	protected String helpDir;
 
-	
 	@Value("${cache.queries.enabled:true}")
 	protected String useCacheQueriesStr;
 
 	@Value("${cache.document.analyze.enabled:true}")
 	protected String useCacheDocumentAnalyzeStr;
 
-	
-	
 	@Value("${llm:openrouter}")
 	protected String llm;
 
+	@Value("${defaultReasoningEffortOption:high}")
+	protected String defaultReasoningEffortOptionStr;
+	private ReasoningEffortOption defaultReasoningEffortOption;
+
+	@Value("${dateRange:3}")
+	private String dateRangeStr;
+
+	private DateRange dateRange;
+
 	
+	
+	
+	
+	
+	
+	@Value("${defaultpassword:pjsf}")
+	protected String defaultpassword;
+
+	/** EMAIL (Mailgun) ------------------------------------------------------- */
+
+	@Value("${email.sender.enabled:false}")
+	protected String emailSenderEnabledStr;
+
+	@Value("${email.mailgun.api.key:}")
+	protected String emailApiKey;
+
+	@Value("${email.mailgun.baseurl:}")
+	protected String emailBaseurl;
+
+	@Value("${email.mailgun.from:}")
+	protected String emailFrom;
+
+	@Value("${email.support:}")
+	protected String emailSupport;
+
+
 	public String getRagLlm() {
 		return llm;
 	}
-	
-	
+
 	public boolean isUseCacheDocumentAnalyzeQueries() {
-		return useCacheDocumentAnalyzeStr!=null && useCacheDocumentAnalyzeStr.equalsIgnoreCase("true");	
+		return useCacheDocumentAnalyzeStr != null && useCacheDocumentAnalyzeStr.equalsIgnoreCase("true");
 	}
 
-	
 	public boolean isUseCacheQueries() {
-		return useCacheQueriesStr!=null && useCacheQueriesStr.equalsIgnoreCase("true");	
+		return useCacheQueriesStr != null && useCacheQueriesStr.equalsIgnoreCase("true");
 	}
-	
-	
-	
-	
-	
-	
+
 	public String getHelpDir() {
 		return helpDir;
 	}
-	
-	
-	
-	
+
+	public DateRange getDefaultDateRange() {
+		return dateRange;
+	}
+
 	public Settings() {
 	}
 
 	@PostConstruct
 	protected void onInitialize() {
 		checkDirs();
+		defaultReasoningEffortOption = ReasoningEffortOption.fromKey(defaultReasoningEffortOptionStr);
+		try {
+			dateRange = DateRange.fromOrdinal(Integer.parseInt(dateRangeStr));
+		} catch (Exception e) {
+			dateRange = DateRange.getDefault();
+		}
 	}
 
 	/** Getters -------------------------------------------------------------- */
@@ -344,54 +343,6 @@ public class Settings {
 		return googleTranslateAuthPath;
 	}
 
-	public float getPageWidth() {
-		return pageWidth;
-	}
-
-	public float getPageHeight() {
-		return pageHeight;
-	}
-
-	public float getMarginTop() {
-		return marginTop;
-	}
-
-	public float getMarginBottom() {
-		return marginBottom;
-	}
-
-	public float getMarginLeft() {
-		return marginLeft;
-	}
-
-	public float getMarginRight() {
-		return marginRight;
-	}
-
-	public float getFontSizeBody() {
-		return fontSizeBody;
-	}
-
-	public float getFontSizeTitle() {
-		return fontSizeTitle;
-	}
-
-	public float getFontSizeChapter() {
-		return fontSizeChapter;
-	}
-
-	public float getFontSizeSection() {
-		return fontSizeSection;
-	}
-
-	public float getFontSizeFooter() {
-		return fontSizeFooter;
-	}
-
-	public float getLineSpacing() {
-		return lineSpacing;
-	}
-
 	public String getRagServerUrl() {
 		return ragServerUrl;
 	}
@@ -436,39 +387,12 @@ public class Settings {
 		return ZoneId.of(zoneid);
 	}
 
-	/**
-	 * @return usable content width (page width minus left and right margins)
-	 */
-	public float getContentWidth() {
-		return pageWidth - marginLeft - marginRight;
-	}
-
-	/**
-	 * @return usable content height (page height minus top and bottom margins)
-	 */
-	public float getContentHeight() {
-		return pageHeight - marginTop - marginBottom;
-	}
-
 	/** Directory bootstrap -------------------------------------------------- */
 
 	private void checkDirs() {
 
-		for (String path : new String[] {
-				workDir,
-				outputDir,
-				inputDir,
-				bookSrcDir,
-				bookPdfDebugDir,
-				bookPdfParseDir,
-				bookPdfParseImagesDir,
-				bookMarkdownDir,
-				bookHtmlDir,
-				queryCacheDir,
-				documentAnalyzeCacheDir,
-				testQueriesDir,
-				regressionTestDir
-		}) {
+		for (String path : new String[] { workDir, outputDir, inputDir, bookSrcDir, bookPdfDebugDir, bookPdfParseDir, bookPdfParseImagesDir, bookMarkdownDir, bookHtmlDir, queryCacheDir, documentAnalyzeCacheDir, testQueriesDir,
+				regressionTestDir }) {
 			try {
 				File dir = new File(path);
 				if (!dir.exists() || !dir.isDirectory())
@@ -483,9 +407,8 @@ public class Settings {
 		return 100;
 	}
 
-
 	public long getCacheQueryDurationMinutes() {
-		return 60*24*30;
+		return 60 * 24 * 30;
 	}
 
 	public long getQueryCacheMaxCapacity() {
@@ -497,7 +420,9 @@ public class Settings {
 		return queryCacheDir;
 	}
 
-	/** Directory where the document analyze cache is persisted ("documentanalyze"). */
+	/**
+	 * Directory where the document analyze cache is persisted ("documentanalyze").
+	 */
 	public String getDocumentAnalyzeCacheDir() {
 		return documentAnalyzeCacheDir;
 	}
@@ -505,6 +430,11 @@ public class Settings {
 	/** Directory containing the test queries JSON files ("testqueries"). */
 	public String getTestQueriesDir() {
 		return testQueriesDir;
+	}
+
+	/** Directory containing the PJSF fallos downloaded to the file system ("fallos"). */
+	public String getFallosDir() {
+		return fallosDir;
 	}
 
 	/** whether the regression test runs on startup */
@@ -522,51 +452,42 @@ public class Settings {
 		return regressionTestEfforts;
 	}
 
-
-
-
 	public boolean isEmailSenderEnabled() {
-		// TODO Auto-generated method stub
-		return false;
+		return emailSenderEnabledStr != null && emailSenderEnabledStr.equalsIgnoreCase("true");
 	}
-
-
-
 
 	public String getEmailFrom() {
-		// TODO Auto-generated method stub
-		return null;
+		return emailFrom;
 	}
-
-
-
 
 	public String getEmailApiKey() {
-		// TODO Auto-generated method stub
-		return null;
+		return emailApiKey;
 	}
 
-
-
-
 	public String getEmailBaseurl() {
-		// TODO Auto-generated method stub
-		return null;
+		return emailBaseurl;
+	}
+
+	/** Support email address (e.g. shown to users / used as fallback sender). */
+	public String getEmailSupport() {
+		return emailSupport;
 	}
 
 	public String getBasePJSFUrl() {
-		return  "https://portal.justiciasantafe.gov.ar/bdj/index.php?pg=bus&m=busqueda&c=busqueda&a=get&id=";
+		return "https://portal.justiciasantafe.gov.ar/bdj/index.php?pg=bus&m=busqueda&c=busqueda&a=get&id=";
 	}
-
 
 	public long getSearchTimeOutMinutes() {
 		return 5;
 	}
 
+	public ReasoningEffortOption getDefaultReasoningEffortOption() {
+		return defaultReasoningEffortOption;
 
+	}
 
-
-
-
+	public String getDefaultPassword() {
+		return defaultpassword;
+	}
 
 }

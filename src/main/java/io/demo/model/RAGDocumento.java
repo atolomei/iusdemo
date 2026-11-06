@@ -8,6 +8,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import io.demo.results.QueryLevelOption;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -60,6 +61,9 @@ public class RAGDocumento extends JsonObject implements Serializable {
     @JsonProperty("score")
 	private double score;
     
+    //@JsonProperty("level")
+ 	//private QueryLevelOption level;
+        
     @JsonProperty("semanticProximity")
 	private double semanticProximity;
     
@@ -67,9 +71,22 @@ public class RAGDocumento extends JsonObject implements Serializable {
 	private double relevance;
     
     
+    /** query level (0,1,2), see io.demo.results.QueryLevelOption */
+    @JsonProperty("queryLevel")
+	private int queryLevel;
+    
     @JsonProperty("relevanceOrder")
 	private  int relevanceOrder;
 
+    
+    @JsonProperty("stance")
+	private LegalStance stance;
+    
+    
+    public double getNormalizedScore() {
+		return Double.valueOf(1000.0 - queryLevel * 100).doubleValue() + relevance;
+	}
+    
     
     public RAGDocumento(String id, String title) {
 		this.id = id;

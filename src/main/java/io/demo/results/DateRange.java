@@ -46,18 +46,12 @@ public enum DateRange {
 	public OffsetDateTime getFrom(ZoneId zoneId) {
 		LocalDate today = LocalDate.now(zoneId);
 		switch (this) {
-		case LAST_3_MONTHS:
-			return today.minusMonths(3).atStartOfDay(zoneId).toOffsetDateTime();
-		case LAST_YEAR:
-			return today.minusYears(1).atStartOfDay(zoneId).toOffsetDateTime();
-		case LAST_2_YEARS:
-			return today.minusYears(2).atStartOfDay(zoneId).toOffsetDateTime();
-		case LAST_5_YEARS:
-			return today.minusYears(5).atStartOfDay(zoneId).toOffsetDateTime();
-		case LAST_10_YEARS:
-			return today.minusYears(10).atStartOfDay(zoneId).toOffsetDateTime();
-		case LAST_20_YEARS:
-			return today.minusYears(20).atStartOfDay(zoneId).toOffsetDateTime();
+		case LAST_3_MONTHS:			return today.minusMonths(3).atStartOfDay(zoneId).toOffsetDateTime();
+		case LAST_YEAR:				return today.minusYears(1).atStartOfDay(zoneId).toOffsetDateTime();
+		case LAST_2_YEARS:			return today.minusYears(2).atStartOfDay(zoneId).toOffsetDateTime();
+		case LAST_5_YEARS:			return today.minusYears(5).atStartOfDay(zoneId).toOffsetDateTime();
+		case LAST_10_YEARS:			return today.minusYears(10).atStartOfDay(zoneId).toOffsetDateTime();
+		case LAST_20_YEARS:			return today.minusYears(20).atStartOfDay(zoneId).toOffsetDateTime();
 		case ALL:
 		default:
 			return null;

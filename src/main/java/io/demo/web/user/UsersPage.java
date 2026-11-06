@@ -9,6 +9,9 @@ import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.panel.Panel;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
+import org.apache.wicket.protocol.http.servlet.ServletWebRequest;
+import org.apache.wicket.request.cycle.RequestCycle;
+import org.apache.wicket.request.http.WebResponse;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.wicketstuff.annotation.mount.MountPath;
 
@@ -17,11 +20,14 @@ import io.demo.model.ObjectState;
 import io.demo.model.Role;
 import io.demo.model.User;
 import io.demo.model.db.service.UserDBService;
+import io.demo.security.config.ImpersonationService;
 import io.demo.service.ServiceLocator;
 import io.demo.web.page.DemoBasePage;
 import io.demo.web.panel.ObjectModel;
 import io.demo.web.panel.SimpleHeaderPanel;
 import io.wktui.error.ErrorPanel;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import io.wktui.nav.breadcrumb.BCElement;
 import io.wktui.nav.breadcrumb.BreadCrumb;
 import io.wktui.nav.menu.AjaxLinkMenuItem;
@@ -188,6 +194,42 @@ public class UsersPage extends DemoBasePage {
 			}
 		});
 
+
+	 
+				menu.addItem(new io.wktui.nav.menu.MenuItemFactory<User>() {
+					private static final long serialVersionUID = 1L;
+
+					@Override
+					public MenuItemPanel<User> getItem(String id) {
+						return new AjaxLinkMenuItem<User>(id, model) {
+							private static final long serialVersionUID = 1L;
+
+							@Override
+							public void onClick(AjaxRequestTarget target) {
+								try {
+									// updatePassword() encodes the raw password with the application's
+									// delegating PasswordEncoder (e.g. prefixed with "{bcrypt}"); setting
+									// the raw password directly would break sign-in with:
+									// "Given that there is no default password encoder configured..."
+									getUserDBService().updatePassword(getModel().getObject(), getSettingsService().getDefaultPassword(), getSessionUser().get());
+									target.add(listPanel);
+								} catch (Exception e) {
+									logger.error(e);
+								}
+							}
+
+							@Override
+							public IModel<String> getLabel() {
+
+								return Model.of("set default password");
+								//return UsersPage.this.getLabel("delete");
+							}
+						};
+					}
+				});
+
+				
+				
 		menu.addItem(new io.wktui.nav.menu.MenuItemFactory<User>() {
 			private static final long serialVersionUID = 1L;
 
@@ -220,7 +262,7 @@ public class UsersPage extends DemoBasePage {
 			}
 		});
 
-		// Ingresar como este usuario (not implemented yet)
+		// Ingresar como este usuario -> only the root user can impersonate
 		menu.addItem(new io.wktui.nav.menu.MenuItemFactory<User>() {
 			private static final long serialVersionUID = 1L;
 
@@ -231,8 +273,30 @@ public class UsersPage extends DemoBasePage {
 
 					@Override
 					public void onClick(AjaxRequestTarget target) {
-						// not implemented yet
-						logger.debug("impersonate -> not implemented yet");
+						try {
+							ServletWebRequest servletWebRequest = (ServletWebRequest) RequestCycle.get().getRequest();
+							HttpServletRequest request = (HttpServletRequest) servletWebRequest.getContainerRequest();
+							HttpServletResponse response = (HttpServletResponse) ((WebResponse) RequestCycle.get().getResponse()).getContainerResponse();
+
+							getImpersonationService().impersonate(getModel().getObject().getUsername(), request, response);
+
+							logger.debug("IMPERSONATION: root -> " + getModel().getObject().getUsername());
+
+							// restart session state for Wicket and reload the UI as the target user
+							getSession().bind();
+							setResponsePage(getApplication().getHomePage());
+						} catch (Exception e) {
+							logger.error(e);
+						}
+					}
+
+					@Override
+					public boolean isVisible() {
+						// only visible to the root user, and not for impersonating themselves
+						Optional<User> caller = UsersPage.this.getSessionUser();
+						if (caller.isEmpty() || !"root".equals(caller.get().getName()))
+							return false;
+						return !"root".equals(getModel().getObject().getName());
 					}
 
 					@Override
@@ -244,6 +308,10 @@ public class UsersPage extends DemoBasePage {
 		});
 
 		return menu;
+	}
+
+	public ImpersonationService getImpersonationService() {
+		return (ImpersonationService) ServiceLocator.getInstance().getBean(ImpersonationService.class);
 	}
 
 	protected void onCreate() {

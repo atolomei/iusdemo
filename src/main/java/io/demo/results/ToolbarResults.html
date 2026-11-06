@@ -14,7 +14,7 @@
 				<div class="row">
 					<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
 						<span class="small text-uppercase d-inline-block fw-bold"><wicket:message key="order" /></span>
-					</div> 
+					</div>
 				</div>
 
 
@@ -39,13 +39,13 @@
 						<span class="small text-uppercase d-inline-block fw-bold"><wicket:message key="dateRange" /></span>
 					</div>
 				</div>
-			
+
 				<div class="row">
 					<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
 						<select wicket:id="daterange" class="form-select form-select-sm d-inline-block w-auto"></select>
 					</div>
 				</div>
-		
+
 			</div>
 
 			<!-- -------------------------- -->
@@ -67,7 +67,7 @@
 						<select wicket:id="subject" class="form-select form-select-sm d-inline-block w-auto"></select>
 					</div>
 				</div>
-							
+
 			</div>
 
 
@@ -90,7 +90,29 @@
 						<select wicket:id="reasoninglevel" class="form-select form-select-sm d-inline-block w-auto"></select>
 					</div>
 				</div>
-							
+
+			</div>
+
+
+			<!-- -------------------------- -->
+
+
+			<!--   QUERY LEVEL  -->
+
+			<div class="ps-1 pe-2 d-inline-block">
+
+				<div class="row">
+					<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
+						<span class="small text-uppercase d-inline-block fw-bold"><wicket:message key="queryLevel" /></span>
+					</div>
+				</div>
+
+				<div class="row">
+					<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
+						<select wicket:id="querylevel" class="form-select form-select-sm d-inline-block w-auto"></select>
+					</div>
+				</div>
+
 			</div>
 
 
@@ -98,6 +120,28 @@
 
 
 			<!--   ANALYSIS  -->
+
+			<!-- div class="ps-1 pe-2 d-inline-block">
+
+				<div class="row">
+					<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
+						<span class="small text-uppercase d-inline-block fw-bold">&nbsp;</span>
+					</div>
+				</div>
+
+				<div class="row">
+					<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
+						<a wicket:id="analysis" class="btn btn-sm btn-outline-primary d-inline-block"><wicket:message key="analysis" /></a>
+					</div>
+				</div>
+
+			</div -->
+
+
+			<!-- -------------------------- -->
+
+
+			<!--   SEND BY EMAIL  -->
 
 			<div class="ps-1 pe-2 d-inline-block">
 
@@ -109,7 +153,8 @@
 
 				<div class="row">
 					<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
-						<a wicket:id="analysis" class="btn btn-sm btn-outline-primary d-inline-block"><wicket:message key="analysis" /></a>
+						<a wicket:id="sendEmail" class="btn btn-sm btn-outline-primary d-inline-block"><i class="fa-solid fa-envelope me-1"></i>
+						<!-- wicket:message key="sendEmail" / --></a>
 					</div>
 				</div>
 
@@ -137,7 +182,7 @@
 				</div>
 		
 			</div -->
-			
+
 
 		</div>
 
@@ -149,16 +194,16 @@
 						<span class="small text-uppercase  d-inline-block fw-bold"> </span>
 					</div>
 				</div>
-				
+
 				<div class="row">
 					<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
-						
-				<span class="small d-inline-block"><wicket:message key="total" />:</span> <b><span wicket:id="total"
-					class="d-inline-block"></span></b>
+
+						<span class="small d-inline-block"><wicket:message key="total" />:</span> <b><span wicket:id="total"
+							class="d-inline-block"></span></b>
 					</div>
 				</div>
-				
-			
+
+
 			</div>
 		</div>
 

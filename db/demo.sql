@@ -34,30 +34,31 @@ CREATE SEQUENCE public.sequence_visit_id
     NO MAXVALUE
     CACHE 1;
 
-						
-CREATE TABLE  Users (
-						id					 bigint primary key default nextval('sequence_id'),
-						name				 character varying(512) not null,
-						state 				 integer default 1,
-						
-						firstname          character varying(128),
-						lastname            character varying(512),
-						
-						password           character varying(512), 
- 						email              character varying(512), 
-						phone              character varying(64),
+				
 
-						locale            character varying(64)   default 'es',
- 						zoneid            character varying(512)  default 'America/Buenos_aires',
+CREATE TABLE  Users (
+						id					 	bigint primary key default nextval('sequence_id'),
+						name				 	character varying(512) not null,
+						state 				 	integer default 1,
 						
-						showwelcome        	boolean default true,
-					    initialsignindone   boolean default  false,
-						welcomeemailsent    timestamp with time zone,
-						emailvalidated      boolean default false,
+						firstname          		character varying(128),
+						lastname            	character varying(512),
 						
-						created				 timestamp with time zone DEFAULT now() not null,
-						lastmodified		 timestamp with time zone DEFAULT now() not null,
-						lastmodifieduser	 bigint references users(id) on delete restrict 
+						password           		character varying(512), 
+ 						email              		character varying(512), 
+						phone              		character varying(64),
+
+						locale            		character varying(64)   default 'es',
+ 						zoneid            		character varying(512)  default 'America/Buenos_aires',
+						
+						showwelcome        		boolean default true,
+					    initialsignindone   	boolean default  false,
+						welcomeemailsent    	timestamp with time zone,
+						emailvalidated      	boolean default false,
+						
+						created				 	timestamp with time zone DEFAULT now() not null,
+						lastmodified		 	timestamp with time zone DEFAULT now() not null,
+						lastmodifieduser	 	bigint references users(id) on delete restrict 
 					);
 					
 
@@ -143,4 +144,48 @@ COMMIT;
 	
 
 END;
+
+
+
+CREATE TABLE resource (
+	id                     	bigint primary key default nextval('sequence_id'),
+ 	bucketName    			character varying(255) not null,
+ 	objectName    			character varying(255) not null,
+ 	created			 		timestamp with time zone DEFAULT now() not null,
+ 	lastmodified		 	timestamp with time zone DEFAULT now() not null,
+ 	lastmodifieduser	    bigint references users(id) on delete restrict not null
+)
+
+CREATE TABLE transcript (
+
+ id                     bigint primary key default nextval('sequence_id'),
+ audioid				bigint references resource(id) on delete cascade not null,
+ 
+ openaiTranscript		    jsonb,
+ openaiTranscriptEdited	    text,
+
+ elevenlabsTranscript		jsonb,
+ elevenlabsTranscriptEdited	text,
+ 
+ 
+ elevenlabsTranscript		jsonb,
+ elevenlabsTranscriptEdited	text,
+ 
+ whisperTranscript			jsonb,
+ whisperTranscriptEdited	text,
+ editionModel			character varying(64),
+ created			 	timestamp with time zone DEFAULT now() not null,
+ lastmodified		 	timestamp with time zone DEFAULT now() not null,
+ lastmodifieduser	    bigint references users(id) on delete restrict not null
+);
+
+
+
+
+
+
+
+
+
+
 

@@ -20,96 +20,77 @@ public class RAGSentencia extends RAGDocumento {
 
 	@JsonProperty("fecha")
 	private OffsetDateTime fecha;
-	
-	
+
 	@JsonProperty("falloIdd")
 	private String falloId;
-	
 
 	@JsonProperty("tribunal")
 	private String tribunal;
-	
 
 	@JsonProperty("metadatos")
 	private Map<String, String> metadatos;
 
 	@JsonProperty("texto")
 	private String texto;
-	
-	
+
 	@JsonProperty("subject")
 	private String subject;
-	
-	
+
 	public RAGSentencia() {
-		this.metadatos=new HashMap<String, String>();
+		this.metadatos = new HashMap<String, String>();
 	}
-		
+
 	public RAGSentencia(String id, String titulo, OffsetDateTime fecha, Map<String, String> metadatos, String texto) {
 		super(id, titulo);
 		this.fecha = fecha;
 		this.metadatos = metadatos;
 		this.texto = texto;
-		
-		
-		if (this.metadatos == null )
-			this.metadatos=new HashMap<String, String>();
-		
-		
-		if (metadatos.get("tribunal")!=null)
+
+		if (this.metadatos == null)
+			this.metadatos = new HashMap<String, String>();
+
+		if (metadatos.get("tribunal") != null)
 			this.tribunal = metadatos.get("tribunal");
 		else
 			this.tribunal = "Corte Suprema de Justicia de Santa Fe";
 
-	
-		if (metadatos.get("materia")!=null)
+		if (metadatos.get("materia") != null)
 			this.subject = metadatos.get("materia");
 
-		
-
 	}
-	
-	
+
 	public void setFecha(OffsetDateTime fecha) {
 		this.fecha = fecha;
 	}
-	
 
 	public void setTribunal(String t) {
 		this.tribunal = t;
 	}
 
-	
-
 	public String getSubtitle() {
 
 		StringBuilder str = new StringBuilder();
 
-
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-		
-		if (fecha!=null) {
-			str.append( fecha.format(formatter));
+
+		if (fecha != null) {
+			str.append(fecha.format(formatter));
 		}
 
-		
-		//if (metadatos.get("tribunal")!=null) {
-		//	str.append( (str.length()>0?" - ":"") + metadatos.get("tribunal"));
-		//}
-		
-		if (tribunal!=null && tribunal.length()>0)
-			str.append( (str.length()>0?" - ":"") + this.tribunal);
+		// if (metadatos.get("tribunal")!=null) {
+		// str.append( (str.length()>0?" - ":"") + metadatos.get("tribunal"));
+		// }
 
-		
-		if (metadatos!=null && metadatos.get("cita")!=null) {
-			str.append( (str.length()>0?" - ":"") + ( "Cita. "+ metadatos.get("cita")));
+		if (tribunal != null && tribunal.length() > 0)
+			str.append((str.length() > 0 ? " - " : "") + this.tribunal);
+
+		if (metadatos != null && metadatos.get("cita") != null) {
+			str.append((str.length() > 0 ? " - " : "") + ("Cita. " + metadatos.get("cita")));
 		}
 
 		return str.toString();
 	}
-	
-	
-		
+
 	/**
 	 * 
 	 * 

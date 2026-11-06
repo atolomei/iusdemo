@@ -30,7 +30,7 @@ public enum TotalOption {
 
 	/** default selection for the selector */
 	public static TotalOption getDefault() {
-		return UP_TO_10;
+		return UP_TO_20;
 	}
 
 	/** Returns the TotalOption with the given max value, or the default if none matches. */

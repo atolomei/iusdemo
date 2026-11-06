@@ -19,7 +19,9 @@
 				</div>
 
 
+
 				<div class="row">
+
 					<div class=" p-3 mb-4 col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
 
 						<div wicket:id="errorContainer" class="row">
@@ -28,11 +30,100 @@
 							</div>
 						</div>
 
-						<!-- div class="row">
-							<div class="mb-2 col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
-								<div class="pt-2 pb-2">filtros y selectores</div>
+
+						<!--  START - REFINE QUERY ------------------------------- -->
+
+						<div class="w-100 ps-3 pe-3 mt-2" wicket:id="refineQueryLookupContainer">
+							<div class="row">
+								<div class="mt-0 mb-4 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12" style="padding-left: 0px;">
+									<a wicket:id="show"> Refinar consulta</a>
+								</div>
 							</div>
-						</div -->
+						</div>
+
+						<!--  this panel to be displayed only after the user clicks on "lookup  -->
+
+						<div class="w-100 ps-3 pe-3 mt-2" wicket:id="refineQueryContainer">
+							<div class="row">
+								<div class="mt-4 mb-4 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+									<h4>Refinar consultas</h4>
+								</div>
+							</div>
+
+							<div class="row">
+								<div class="mb-2 mt-0 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+									
+									<!-- div class="analysis border rounded p-3 mb-2">
+										<div wicket:id="related"></div>
+										<div wicket:id="noRelated"></div>
+									</div -->
+								</div>
+
+								<div class="row">
+									<div class="mb-4 mt-2 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+										<a wicket:id="close"> <i> cerrar refinar</i></a>
+
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- END - REFINE  ------------------------------- -->
+
+
+  
+
+
+						<!--  START - RELATED  ------------------------------- -->
+
+
+						<div class="w-100 ps-3 pe-3 mt-2" wicket:id="relatedLookupContainer">
+							<div class="row">
+								<div class="mt-0 mb-4 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12" style="padding-left: 0px;">
+									<a wicket:id="show"> Consultas relacionadas</a>
+								</div>
+							</div>
+						</div>
+
+
+						<!--  this panel to be displayed only after the user clicks on "lookup  -->
+
+						<div class="w-100 ps-3 pe-3 mt-2" wicket:id="relatedContainer">
+							<div class="row">
+								<div class="mt-4 mb-4 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+									<h4>Consultas relacionadas</h4>
+								</div>
+							</div>
+
+							<div class="row">
+								<div class="mb-2 mt-0 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+
+									<div class="analysis border rounded p-3 mb-2">
+										<div wicket:id="related"></div>
+										<div wicket:id="noRelated"></div>
+									</div>
+
+
+								</div>
+
+								<div class="row">
+									<div class="mb-4 mt-2 col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+										<a wicket:id="close"> <i> cerrar relacionadas</i></a>
+
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- END - RELATED  ------------------------------- -->
+
+
+
+
+
+
+
+
 
 
 
@@ -58,7 +149,13 @@
 							</div>
 						</div>
 
- 
+						<div wicket:id="sendEmailContainer" class="row">
+							<div class="mb-0 col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">
+								<div wicket:id="sendemail"></div>
+							</div>
+						</div>
+
+
 
 						<div class="row">
 							<div class="mb-0 col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12">

@@ -14,6 +14,7 @@ import io.demo.Logger;
 import io.demo.model.ObjectState;
 import io.demo.model.Role;
 import io.demo.model.User;
+import io.demo.service.ServiceLocator;
 import io.demo.service.Settings;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
@@ -40,13 +41,10 @@ public class UserDBService extends DBService<User, Long> {
 	@JsonIgnore
 	private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
-
 	public UserDBService(CrudRepository<User, Long> repository, Settings settings) {
 		super(repository, settings);
 	}
 
-
-	
 	@Override
 	public String toJSON() {
 		return null;
@@ -65,13 +63,16 @@ public class UserDBService extends DBService<User, Long> {
 		user.setCreated(OffsetDateTime.now());
 		user.setLastModified(OffsetDateTime.now());
 		user.setLastModifiedUser(createdBy);
-		user.setState(ObjectState.EDITION);
+		user.setState(ObjectState.PUBLISHED);
 		user.setRole(Role.REGULAR_USER);
-
-		String hash = passwordEncoder.encode("demo");
+		String hash = passwordEncoder.encode(getSettingsService().getDefaultPassword());
 		user.setPassword(hash);
 
 		return getRepository().save(user);
+	}
+
+	public Settings getSettingsService() {
+		return (Settings) ServiceLocator.getInstance().getBean(Settings.class);
 	}
 
 	/**
@@ -232,7 +233,6 @@ public class UserDBService extends DBService<User, Long> {
 		return getEntityManager().createQuery(cq).getResultList();
 	}
 
-
 	@Transactional
 	public User findRoot() {
 		CriteriaBuilder cb = getEntityManager().getCriteriaBuilder();
@@ -253,18 +253,16 @@ public class UserDBService extends DBService<User, Long> {
 		throw new RuntimeException("Database does not have user with name=='root'");
 	}
 
-	
 	@Override
 	protected Class<User> getEntityClass() {
 		return User.class;
 	}
 
-
 	@PostConstruct
 	protected void onInitialize() {
 		super.register(getEntityClass(), this);
 	}
-	
+
 	@Transactional
 	public Optional<User> findByUsername(String username) {
 
@@ -286,24 +284,18 @@ public class UserDBService extends DBService<User, Long> {
 		return Optional.empty();
 	}
 
-
-
 	public boolean isRoot(User u) {
 		return u.getName() != null && u.getName().equals("root");
 	}
 
-
-
 	public boolean isAdmin(User u) {
-		return u.getRole()==Role.ADMIN;
-		
+		return u.getRole() == Role.ADMIN;
+
 	}
 
 	public boolean isGeneralUser(User u) {
-		return u.getRole()==Role.REGULAR_USER;
-		
+		return u.getRole() == Role.REGULAR_USER;
+
 	}
 
-	
-	
 }
